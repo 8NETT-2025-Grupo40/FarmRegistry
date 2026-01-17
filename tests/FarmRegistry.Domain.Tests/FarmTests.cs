@@ -8,30 +8,33 @@ public class FarmTests
     [Fact]
     public void Create_Farm_ShouldStartActive_AndHaveValidData()
     {
-        var farm = new Farm("Fazenda Boa Vista", "João");
+        var farm = new Farm("Fazenda Boa Vista", "Ribeirão Preto", "SP");
 
-        Assert.NotEqual(Guid.Empty, farm.Id);
+        Assert.NotEqual(Guid.Empty, farm.FarmId);
         Assert.True(farm.IsActive);
         Assert.Equal("Fazenda Boa Vista", farm.Name);
-        Assert.Equal("João", farm.OwnerName);
+        Assert.Equal("Ribeirão Preto", farm.City);
+        Assert.Equal("SP", farm.State);
+        Assert.True(farm.CreatedAt != default);
         Assert.Empty(farm.Fields);
     }
 
     [Fact]
-    public void Update_Farm_ShouldChangeNameAndOwner()
+    public void Update_Farm_ShouldChangeNameCityState()
     {
-        var farm = new Farm("Fazenda A", "Maria");
+        var farm = new Farm("Fazenda A", "Campinas", "SP");
 
-        farm.Update("Fazenda B", "Carlos");
+        farm.Update("Fazenda B", "Sorocaba", "sp");
 
         Assert.Equal("Fazenda B", farm.Name);
-        Assert.Equal("Carlos", farm.OwnerName);
+        Assert.Equal("Sorocaba", farm.City);
+        Assert.Equal("SP", farm.State);
     }
 
     [Fact]
     public void ActivateDeactivate_Farm_ShouldToggleIsActive()
     {
-        var farm = new Farm("Fazenda A", "Maria");
+        var farm = new Farm("Fazenda A", "Campinas", "SP");
 
         farm.Deactivate();
         Assert.False(farm.IsActive);
@@ -41,29 +44,31 @@ public class FarmTests
     }
 
     [Fact]
-    public void AddField_ShouldCreateFieldLinkedToFarm_AndBeReadOnlyExternally()
+    public void AddField_ShouldCreateFieldLinkedToFarm()
     {
-        var farm = new Farm("Fazenda A", "Maria");
+        var farm = new Farm("Fazenda A", "Campinas", "SP");
 
-        var field = farm.AddField("Talhão 01", "Milho", 10);
+        var field = farm.AddField("T01", "Talhão 01", 10);
 
         Assert.Single(farm.Fields);
-        Assert.Equal(farm.Id, field.FarmId);
-        Assert.True(field.IsActive);
+        Assert.Equal(farm.FarmId, field.FarmId);
+        Assert.Equal("T01", field.Code);
         Assert.Equal("Talhão 01", field.Name);
-        Assert.Equal("Milho", field.Culture);
         Assert.Equal(10, field.AreaHectares);
+        Assert.Equal(FieldStatus.Normal, field.Status);
+        Assert.True(field.CreatedAt != default);
+        Assert.True(field.StatusUpdatedAt != default);
     }
 
     [Fact]
-    public void AddField_ShouldRejectDuplicateFieldName()
+    public void AddField_ShouldRejectDuplicateFieldCode()
     {
-        var farm = new Farm("Fazenda A", "Maria");
-        farm.AddField("Talhão 01", "Milho", 10);
+        var farm = new Farm("Fazenda A", "Campinas", "SP");
+        farm.AddField("T01", "Talhão 01", 10);
 
         var ex = Assert.Throws<DomainException>(() =>
-            farm.AddField("talhão 01", "Soja", 12)); // case-insensitive
+            farm.AddField("t01", "Talhão 02", 12));
 
-        Assert.Contains("Já existe um talhão", ex.Message);
+        Assert.Contains("Já existe um talhão com esse código", ex.Message);
     }
 }
