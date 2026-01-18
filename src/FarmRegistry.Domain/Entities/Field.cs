@@ -15,6 +15,9 @@ public sealed class Field
     public DateTime StatusUpdatedAt { get; private set; }
     public DateTime CreatedAt { get; }
 
+    // Construtor vazio para Entity Framework
+    private Field() { }
+
     public Field(Guid farmId, string code, string name, double areaHectares, DateTime? createdAt = null)
     {
         if (farmId == Guid.Empty) throw new DomainException("FarmId é obrigatório.");

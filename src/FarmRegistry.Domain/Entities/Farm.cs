@@ -4,17 +4,20 @@ namespace FarmRegistry.Domain.Entities;
 
 public sealed class Farm
 {
-    public Guid FarmId { get; }
+    public Guid FarmId { get; private set; }
 
-    public string Name { get; private set; }
-    public string City { get; private set; }
-    public string State { get; private set; }
-    public DateTime CreatedAt { get; }
+    public string Name { get; private set; } = string.Empty;
+    public string City { get; private set; } = string.Empty;
+    public string State { get; private set; } = string.Empty;
+    public DateTime CreatedAt { get; private set; }
 
     public bool IsActive { get; private set; }
 
     private readonly List<Field> _fields = new();
     public IReadOnlyCollection<Field> Fields => _fields.AsReadOnly();
+
+    // Construtor vazio para Entity Framework
+    private Farm() { }
 
     public Farm(string name, string city, string state, DateTime? createdAt = null)
     {

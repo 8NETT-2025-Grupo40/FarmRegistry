@@ -14,6 +14,7 @@ public sealed class FarmRegistryProfile : Profile
 
         CreateMap<Field, FieldResponse>()
             .ForMember(d => d.Id, opt => opt.MapFrom(s => s.FieldId))
-            .ForMember(d => d.AreaHectares, opt => opt.MapFrom(s => (decimal)s.AreaHectares));
+            .ForMember(d => d.AreaHectares, opt => opt.MapFrom(s => (decimal)s.AreaHectares))
+            .ForMember(d => d.StatusUpdatedAt, opt => opt.MapFrom(s => (DateTime?)s.StatusUpdatedAt));
     }
 }
