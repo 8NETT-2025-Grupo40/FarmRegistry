@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FarmRegistry.Application\FarmRegistry.Application.csproj" />
     <ProjectReference Include="..\FarmRegistry.Domain\FarmRegistry.Domain.csproj" />
   </ItemGroup>
 
