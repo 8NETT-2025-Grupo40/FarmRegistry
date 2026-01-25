@@ -7,8 +7,8 @@ public sealed class Field
     public Guid FieldId { get; }
     public Guid FarmId { get; private set; }
 
-    public string Code { get; private set; }
-    public string Name { get; private set; }
+    public string Code { get; private set; } = string.Empty;
+    public string Name { get; private set; } = string.Empty;
     public double AreaHectares { get; private set; }
 
     public FieldStatus Status { get; private set; }
@@ -16,7 +16,11 @@ public sealed class Field
     public DateTime CreatedAt { get; }
 
     // Construtor vazio para Entity Framework
-    private Field() { }
+    private Field() 
+    {
+        Code = string.Empty;
+        Name = string.Empty;
+    }
 
     public Field(Guid farmId, string code, string name, double areaHectares, DateTime? createdAt = null)
     {

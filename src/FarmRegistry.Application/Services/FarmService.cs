@@ -1,6 +1,4 @@
 using AutoMapper;
-using FluentValidation;
-using FarmRegistry.Application.Contracts.Common;
 using FarmRegistry.Application.Contracts.Farms;
 using FarmRegistry.Application.Contracts.Repositories;
 using FarmRegistry.Domain.Common;
@@ -8,97 +6,75 @@ using FarmRegistry.Domain.Entities;
 
 namespace FarmRegistry.Application.Services;
 
-public sealed class FarmService
+public sealed class FarmService : IFarmService
 {
     private readonly IFarmRepository _farmRepository;
-    private readonly IUserContext _userContext;
     private readonly IMapper _mapper;
-    private readonly IValidator<CreateFarmRequest> _createValidator;
-    private readonly IValidator<UpdateFarmRequest> _updateValidator;
 
-    public FarmService(
-        IFarmRepository farmRepository,
-        IUserContext userContext,
-        IMapper mapper,
-        IValidator<CreateFarmRequest> createValidator,
-        IValidator<UpdateFarmRequest> updateValidator)
+    public FarmService(IFarmRepository farmRepository, IMapper mapper)
     {
         _farmRepository = farmRepository;
-        _userContext = userContext;
         _mapper = mapper;
-        _createValidator = createValidator;
-        _updateValidator = updateValidator;
     }
 
-    public async Task<FarmResponse> CreateAsync(CreateFarmRequest request, CancellationToken cancellationToken = default)
+    public async Task<FarmResponse> CreateFarmAsync(CreateFarmRequest request, CancellationToken cancellationToken = default)
     {
-        var validationResult = await _createValidator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
-            throw new DomainException(string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage)));
-
         var farm = new Farm(request.Name, request.City, request.State);
-        
-        await _farmRepository.CreateAsync(farm, cancellationToken);
-        
-        return _mapper.Map<FarmResponse>(farm);
+        var createdFarm = await _farmRepository.CreateAsync(farm, cancellationToken);
+        return _mapper.Map<FarmResponse>(createdFarm);
     }
 
-    public async Task<FarmResponse> UpdateAsync(UpdateFarmRequest request, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<FarmResponse>> GetFarmsAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
-        var validationResult = await _updateValidator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
-            throw new DomainException(string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage)));
-
-        var farm = await _farmRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (farm is null)
-            throw new DomainException("Propriedade não encontrada.");
-
-        farm.Update(request.Name, request.City, request.State);
-        
-        await _farmRepository.UpdateAsync(farm, cancellationToken);
-        
-        return _mapper.Map<FarmResponse>(farm);
-    }
-
-    public async Task<IEnumerable<FarmResponse>> GetAllAsync(CancellationToken cancellationToken = default)
-    {
-        var farms = await _farmRepository.GetAllAsync(_userContext.OwnerId, cancellationToken);
+        var farms = await _farmRepository.GetAllAsync(ownerId, cancellationToken);
         return _mapper.Map<IEnumerable<FarmResponse>>(farms);
     }
 
-    public async Task<FarmResponse?> GetByIdAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<FarmResponse?> GetFarmByIdAsync(Guid farmId, CancellationToken cancellationToken = default)
     {
         var farm = await _farmRepository.GetByIdAsync(farmId, cancellationToken);
-        return farm is null ? null : _mapper.Map<FarmResponse>(farm);
+        return farm == null ? null : _mapper.Map<FarmResponse>(farm);
     }
 
-    public async Task ActivateAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<FarmResponse> UpdateFarmAsync(UpdateFarmRequest request, CancellationToken cancellationToken = default)
+    {
+        var farm = await _farmRepository.GetByIdAsync(request.Id, cancellationToken);
+        if (farm == null)
+            throw new DomainException($"Fazenda com ID {request.Id} não foi encontrada.");
+
+        farm.Update(request.Name, request.City, request.State);
+        var updatedFarm = await _farmRepository.UpdateAsync(farm, cancellationToken);
+        return _mapper.Map<FarmResponse>(updatedFarm);
+    }
+
+    public async Task<FarmResponse> ActivateFarmAsync(Guid farmId, CancellationToken cancellationToken = default)
     {
         var farm = await _farmRepository.GetByIdAsync(farmId, cancellationToken);
-        if (farm is null)
-            throw new DomainException("Propriedade não encontrada.");
+        if (farm == null)
+            throw new DomainException($"Fazenda com ID {farmId} não foi encontrada.");
 
         farm.Activate();
-        await _farmRepository.UpdateAsync(farm, cancellationToken);
+        var updatedFarm = await _farmRepository.UpdateAsync(farm, cancellationToken);
+        return _mapper.Map<FarmResponse>(updatedFarm);
     }
 
-    public async Task DeactivateAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<FarmResponse> DeactivateFarmAsync(Guid farmId, CancellationToken cancellationToken = default)
     {
         var farm = await _farmRepository.GetByIdAsync(farmId, cancellationToken);
-        if (farm is null)
-            throw new DomainException("Propriedade não encontrada.");
+        if (farm == null)
+            throw new DomainException($"Fazenda com ID {farmId} não foi encontrada.");
 
         farm.Deactivate();
-        await _farmRepository.UpdateAsync(farm, cancellationToken);
+        var updatedFarm = await _farmRepository.UpdateAsync(farm, cancellationToken);
+        return _mapper.Map<FarmResponse>(updatedFarm);
     }
 
-    public async Task DeleteAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task DeleteFarmAsync(Guid farmId, CancellationToken cancellationToken = default)
     {
-        var farm = await _farmRepository.GetByIdAsync(farmId, cancellationToken);
-        if (farm is null)
-            throw new DomainException("Propriedade não encontrada.");
+        var farmExists = await _farmRepository.ExistsAsync(farmId, cancellationToken);
+        if (!farmExists)
+            throw new DomainException($"Fazenda com ID {farmId} não foi encontrada.");
 
-        farm.Deactivate(); // Delete lógico
-        await _farmRepository.UpdateAsync(farm, cancellationToken);
+        await _farmRepository.DeleteAsync(farmId, cancellationToken);
     }
 }
