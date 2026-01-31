@@ -34,7 +34,7 @@ builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
 // Add layer services
 builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructureServices();
+builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApiServices(builder.Configuration);
 
 var app = builder.Build();
