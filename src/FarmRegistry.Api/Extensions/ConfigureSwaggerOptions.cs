@@ -20,6 +20,30 @@ public class ConfigureSwaggerOptions : IConfigureNamedOptions<SwaggerGenOptions>
         {
             options.SwaggerDoc(description.GroupName, CreateVersionInfo(description));
         }
+
+        // Adicionar suporte para header X-Mock-User-Id
+        options.AddSecurityDefinition("MockAuth", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Header,
+            Name = "X-Mock-User-Id",
+            Description = "Mock User ID for authentication (GUID format). Leave empty to use default user."
+        });
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "MockAuth"
+                    }
+                },
+                new string[] { }
+            }
+        });
     }
 
     public void Configure(string? name, SwaggerGenOptions options) => Configure(options);

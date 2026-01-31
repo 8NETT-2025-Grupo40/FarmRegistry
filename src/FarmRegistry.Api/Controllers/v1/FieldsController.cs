@@ -1,8 +1,10 @@
+using Asp.Versioning;
+using FarmRegistry.Application.Contracts.Common;
 using FarmRegistry.Application.Contracts.Fields;
 using FarmRegistry.Application.Services;
 using FarmRegistry.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Asp.Versioning;
 
 namespace FarmRegistry.Api.Controllers.v1;
 
@@ -10,13 +12,16 @@ namespace FarmRegistry.Api.Controllers.v1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/fields")]
 [Produces("application/json")]
-public class FieldsController : ControllerBase
+[Authorize]
+public class FieldsController : BaseController
 {
     private readonly IFieldService _fieldService;
+    private readonly IUserContext _userContext;
 
-    public FieldsController(IFieldService fieldService)
+    public FieldsController(IFieldService fieldService, IUserContext userContext)
     {
         _fieldService = fieldService;
+        _userContext = userContext;
     }
 
     /// <summary>
@@ -32,10 +37,12 @@ public class FieldsController : ControllerBase
         try
         {
             var response = await _fieldService.CreateFieldAsync(request);
+            LogUserInfo("CreateField", _userContext);
             return CreatedAtAction(nameof(GetFieldById), new { id = response.Id }, response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("CreateFieldBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
                 Title = "Erro de domínio",
@@ -57,6 +64,7 @@ public class FieldsController : ControllerBase
     {
         if (!farmId.HasValue)
         {
+            LogUserInfo("GetFieldsBadRequestRequiredParam", _userContext);
             return BadRequest(new ProblemDetails
             {
                 Title = "Parâmetro obrigatório",
@@ -68,10 +76,12 @@ public class FieldsController : ControllerBase
         try
         {
             var response = await _fieldService.GetFieldsByFarmIdAsync(farmId.Value);
+            LogUserInfo("GetFields", _userContext);
             return Ok(response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("GetFieldsBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
                 Title = "Erro de domínio",
@@ -94,6 +104,7 @@ public class FieldsController : ControllerBase
         var response = await _fieldService.GetFieldByIdAsync(id);
         if (response == null)
         {
+            LogUserInfo("GetFieldByIdNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Talhão não encontrado",
@@ -101,7 +112,7 @@ public class FieldsController : ControllerBase
                 Status = StatusCodes.Status404NotFound
             });
         }
-
+        LogUserInfo("GetFieldById", _userContext);
         return Ok(response);
     }
 
@@ -119,6 +130,7 @@ public class FieldsController : ControllerBase
     {
         if (id != request.Id)
         {
+            LogUserInfo("UpdateFieldIncosistenceId", _userContext);
             return BadRequest(new ProblemDetails
             {
                 Title = "ID inconsistente",
@@ -130,10 +142,12 @@ public class FieldsController : ControllerBase
         try
         {
             var response = await _fieldService.UpdateFieldAsync(request);
+            LogUserInfo("UpdateField", _userContext);
             return Ok(response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("UpdateFieldBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
                 Title = "Erro de domínio",
@@ -156,10 +170,12 @@ public class FieldsController : ControllerBase
         try
         {
             var response = await _fieldService.ActivateFieldAsync(id);
+            LogUserInfo("ActivateField", _userContext);
             return Ok(response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("ActivateFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Talhão não encontrado",
@@ -182,10 +198,12 @@ public class FieldsController : ControllerBase
         try
         {
             var response = await _fieldService.DeactivateFieldAsync(id);
+            LogUserInfo("DeactivateField", _userContext);
             return Ok(response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("DeactivateFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Talhão não encontrado",
@@ -208,10 +226,12 @@ public class FieldsController : ControllerBase
         try
         {
             await _fieldService.DeleteFieldAsync(id);
+            LogUserInfo("DeleteField", _userContext);
             return NoContent();
         }
         catch (DomainException ex)
         {
+            LogUserInfo("DeleteFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Talhão não encontrado",

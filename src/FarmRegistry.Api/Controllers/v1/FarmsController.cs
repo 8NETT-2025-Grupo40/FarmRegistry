@@ -1,9 +1,10 @@
+using Asp.Versioning;
 using FarmRegistry.Application.Contracts.Common;
 using FarmRegistry.Application.Contracts.Farms;
 using FarmRegistry.Application.Services;
 using FarmRegistry.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Asp.Versioning;
 
 namespace FarmRegistry.Api.Controllers.v1;
 
@@ -11,7 +12,8 @@ namespace FarmRegistry.Api.Controllers.v1;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/farms")]
 [Produces("application/json")]
-public class FarmsController : ControllerBase
+[Authorize]
+public class FarmsController : BaseController
 {
     private readonly IFarmService _farmService;
     private readonly IUserContext _userContext;
@@ -35,6 +37,8 @@ public class FarmsController : ControllerBase
         try
         {
             var response = await _farmService.CreateFarmAsync(request);
+            LogUserInfo("CreateFarms", _userContext);
+
             return CreatedAtAction(nameof(GetFarmById), new { id = response.Id }, response);
         }
         catch (DomainException ex)
@@ -57,6 +61,7 @@ public class FarmsController : ControllerBase
     public async Task<IActionResult> GetFarms()
     {
         var response = await _farmService.GetFarmsAsync(_userContext.OwnerId);
+        LogUserInfo("GetFarms", _userContext);
         return Ok(response);
     }
 
@@ -73,6 +78,7 @@ public class FarmsController : ControllerBase
         var response = await _farmService.GetFarmByIdAsync(id);
         if (response == null)
         {
+            LogUserInfo("GetFarmByIdNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Fazenda não encontrada",
@@ -80,7 +86,7 @@ public class FarmsController : ControllerBase
                 Status = StatusCodes.Status404NotFound
             });
         }
-
+        LogUserInfo("GetFarmById", _userContext);
         return Ok(response);
     }
 
@@ -98,6 +104,7 @@ public class FarmsController : ControllerBase
     {
         if (id != request.Id)
         {
+            LogUserInfo("UpdateFarmNotFound", _userContext);
             return BadRequest(new ProblemDetails
             {
                 Title = "ID inconsistente",
@@ -109,10 +116,12 @@ public class FarmsController : ControllerBase
         try
         {
             var response = await _farmService.UpdateFarmAsync(request);
+            LogUserInfo("UpdateFarm", _userContext);
             return Ok(response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("UpdateFarmBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
                 Title = "Erro de domínio",
@@ -135,10 +144,12 @@ public class FarmsController : ControllerBase
         try
         {
             var response = await _farmService.ActivateFarmAsync(id);
+            LogUserInfo("ActivateFarm", _userContext);
             return Ok(response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("ActivateFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Fazenda não encontrada",
@@ -161,10 +172,12 @@ public class FarmsController : ControllerBase
         try
         {
             var response = await _farmService.DeactivateFarmAsync(id);
+            LogUserInfo("DeactivateFarm", _userContext);
             return Ok(response);
         }
         catch (DomainException ex)
         {
+            LogUserInfo("DeactivateFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Fazenda não encontrada",
@@ -187,10 +200,12 @@ public class FarmsController : ControllerBase
         try
         {
             await _farmService.DeleteFarmAsync(id);
+            LogUserInfo("DeleteFarm", _userContext);
             return NoContent();
         }
         catch (DomainException ex)
         {
+            LogUserInfo("DeleteFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
                 Title = "Fazenda não encontrada",

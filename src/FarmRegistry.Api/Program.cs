@@ -1,4 +1,6 @@
 using FarmRegistry.Api.Extensions;
+using FarmRegistry.Api.Middleware;
+using FarmRegistry.Application.Configuration;
 using FarmRegistry.Application.Extensions;
 using FarmRegistry.Infrastructure.Extensions;
 using Asp.Versioning;
@@ -32,8 +34,8 @@ builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
 // Add layer services
 builder.Services.AddApplicationServices();
-builder.Services.AddInfrastructureServices();
-builder.Services.AddApiServices();
+builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddApiServices(builder.Configuration);
 
 var app = builder.Build();
 
@@ -61,6 +63,20 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+// Authentication & Authorization
+var authOptions = builder.Configuration.GetSection(AuthenticationOptions.SectionName).Get<AuthenticationOptions>()
+                 ?? new AuthenticationOptions();
+
+if (authOptions.AuthMode?.Equals("MOCK", StringComparison.OrdinalIgnoreCase) == true)
+{
+    app.UseMiddleware<MockAuthenticationMiddleware>();
+}
+else
+{
+    app.UseAuthentication();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 
