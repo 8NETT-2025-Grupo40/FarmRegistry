@@ -1,55 +1,67 @@
 using FarmRegistry.Application.Contracts.Repositories;
 using FarmRegistry.Domain.Entities;
+using FarmRegistry.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace FarmRegistry.Infrastructure.Repositories;
 
 public sealed class FieldRepository : IFieldRepository
 {
-    // TODO: Implementar com Entity Framework quando a camada de persistência for criada
-    private static readonly Dictionary<Guid, Field> _fields = new();
+    private readonly FarmRegistryDbContext _context;
 
-    public Task<Field?> GetByIdAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public FieldRepository(FarmRegistryDbContext context)
     {
-        _fields.TryGetValue(fieldId, out var field);
-        return Task.FromResult(field);
+        _context = context;
     }
 
-    public Task<IEnumerable<Field>> GetByFarmIdAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<Field?> GetByIdAsync(Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var fields = _fields.Values.Where(f => f.FarmId == farmId).AsEnumerable();
-        return Task.FromResult(fields);
+        return await _context.Fields
+            .FirstOrDefaultAsync(f => f.FieldId == fieldId, cancellationToken);
     }
 
-    public Task<Field> CreateAsync(Field field, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Field>> GetByFarmIdAsync(Guid farmId, CancellationToken cancellationToken = default)
     {
-        _fields[field.FieldId] = field;
-        return Task.FromResult(field);
+        return await _context.Fields
+            .Where(f => f.FarmId == farmId)
+            .ToListAsync(cancellationToken);
     }
 
-    public Task<Field> UpdateAsync(Field field, CancellationToken cancellationToken = default)
+    public async Task<Field> CreateAsync(Field field, CancellationToken cancellationToken = default)
     {
-        _fields[field.FieldId] = field;
-        return Task.FromResult(field);
+        await _context.Fields.AddAsync(field, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+        return field;
     }
 
-    public Task DeleteAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task<Field> UpdateAsync(Field field, CancellationToken cancellationToken = default)
     {
-        _fields.Remove(fieldId);
-        return Task.CompletedTask;
+        _context.Fields.Update(field);
+        await _context.SaveChangesAsync(cancellationToken);
+        return field;
     }
 
-    public Task<bool> ExistsAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid fieldId, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_fields.ContainsKey(fieldId));
+        var field = await GetByIdAsync(fieldId, cancellationToken);
+        if (field != null)
+        {
+            _context.Fields.Remove(field);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 
-    public Task<bool> CodeExistsInFarmAsync(Guid farmId, string code, Guid? excludeFieldId = null, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var exists = _fields.Values.Any(f => 
+        return await _context.Fields.AnyAsync(f => f.FieldId == fieldId, cancellationToken);
+    }
+
+    public async Task<bool> CodeExistsInFarmAsync(Guid farmId, string code, Guid? excludeFieldId = null, CancellationToken cancellationToken = default)
+    {
+        return await _context.Fields.AnyAsync(f => 
             f.FarmId == farmId && 
-            string.Equals(f.Code, code, StringComparison.OrdinalIgnoreCase) &&
-            (excludeFieldId == null || f.FieldId != excludeFieldId));
-            
-        return Task.FromResult(exists);
+            f.Code.ToLower() == code.ToLower() &&
+            (excludeFieldId == null || f.FieldId != excludeFieldId), 
+            cancellationToken);
     }
 }
