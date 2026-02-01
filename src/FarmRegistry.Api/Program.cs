@@ -1,9 +1,11 @@
+using Asp.Versioning;
 using FarmRegistry.Api.Extensions;
 using FarmRegistry.Api.Middleware;
 using FarmRegistry.Application.Configuration;
 using FarmRegistry.Application.Extensions;
 using FarmRegistry.Infrastructure.Extensions;
-using Asp.Versioning;
+using FarmRegistry.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +37,11 @@ builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 // Add layer services
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// Verificar connection string usada.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"[STARTUP] Connection String: {connectionString}");
+
 builder.Services.AddApiServices(builder.Configuration);
 
 var app = builder.Build();
@@ -42,6 +49,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    // Aplicar migrations automaticamente no startup (apenas para desenvolvimento)
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<FarmRegistryDbContext>();
+    dbContext.Database.Migrate();
+
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
@@ -61,7 +73,9 @@ if (app.Environment.IsDevelopment())
        .ExcludeFromDescription();
 }
 
-app.UseHttpsRedirection();
+// Remover ou comentar UseHttpsRedirection para ambiente Docker
+// app.UseHttpsRedirection();
+
 app.UseRouting();
 
 // Authentication & Authorization

@@ -1,20 +1,18 @@
-# FarmRegistry
+ï»¿# FarmRegistry
 
-Plataforma de Gestão de Propriedades Rurais (MVP) desenvolvida em .NET 8.0, criada como parte do Hackathon 8NETT, com foco no registro e organização de propriedades e talhões agrícolas.
+Plataforma de GestÃ£o de Propriedades Rurais (MVP) desenvolvida em .NET 8.0, criada como parte do Hackathon 8NETT, com foco no registro e organizaÃ§Ã£o de propriedades e talhÃµes agrÃ­colas.
 
-O projeto está em fase inicial e, neste momento, contém apenas a estrutura da solução, sem implementação de regras ou funcionalidades.
+## ğŸ¯ Objetivo do Projeto
 
-## ?? Objetivo do Projeto
+O FarmRegistry tem como objetivo fornecer uma API REST responsÃ¡vel pelo cadastro e gerenciamento estrutural do ambiente agrÃ­cola, servindo como base para integraÃ§Ãµes futuras com outros microserviÃ§os da plataforma.
 
-O FarmRegistry tem como objetivo fornecer uma API REST responsável pelo cadastro e gerenciamento estrutural do ambiente agrícola, servindo como base para integrações futuras com outros microserviços da plataforma.
+Este serviÃ§o atuarÃ¡ como o registro central (registry) de propriedades e talhÃµes.
 
-Este serviço atuará como o registro central (registry) de propriedades e talhões.
+## ğŸ—ï¸ Arquitetura
 
-## ?? Arquitetura
+A soluÃ§Ã£o segue um modelo de arquitetura em camadas (DDD Light), visando clareza, separaÃ§Ã£o de responsabilidades e facilidade de evoluÃ§Ã£o.
 
-A solução segue um modelo de arquitetura em camadas (DDD Light), visando clareza, separação de responsabilidades e facilidade de evolução.
-
-### Estrutura da Solução
+### Estrutura da SoluÃ§Ã£o
 
 ```
 src/
@@ -30,75 +28,47 @@ tests/
  +- FarmRegistry.Infrastructure.Tests
 ```
 
-## ?? Responsabilidade das Camadas
+## ğŸ“¦ Responsabilidade das Camadas
 
 **FarmRegistry.Api**  
-Exposição da API REST (controllers, endpoints, Swagger).
+ExposiÃ§Ã£o da API REST (controllers, endpoints, Swagger).
 
 **FarmRegistry.Application**  
-Casos de uso, DTOs, validações e orquestração do fluxo da aplicação.
+Casos de uso, DTOs, validaÃ§Ãµes e orquestraÃ§Ã£o do fluxo da aplicaÃ§Ã£o.
 
 **FarmRegistry.Domain**  
-Entidades e regras centrais do domínio de propriedades rurais.
+Entidades e regras centrais do domÃ­nio de propriedades rurais.
 
 **FarmRegistry.Infrastructure**  
-Persistência, acesso a dados e integrações técnicas.
+PersistÃªncia, acesso a dados e integraÃ§Ãµes tÃ©cnicas.
 
 **Projetos de Testes**  
-Preparados para testes unitários e de integração de cada camada.
+Preparados para testes unitÃ¡rios e de integraÃ§Ã£o de cada camada.
 
-## ?? Escopo do MVP (CRUD)
+## ğŸ“‹ Escopo do MVP (CRUD)
 
-De acordo com os requisitos do Hackathon 8NETT, o MVP deste microserviço deverá contemplar o CRUD das seguintes entidades:
+De acordo com os requisitos do Hackathon 8NETT, o MVP deste microserviÃ§o contempla o CRUD das seguintes entidades:
 
-### ?? Propriedade Rural
+### ğŸšœ Propriedade Rural
 - Cadastro de propriedades
 - Consulta de propriedades cadastradas
-- Atualização de dados da propriedade
-- Exclusão de propriedades
+- AtualizaÃ§Ã£o de dados da propriedade
+- ExclusÃ£o de propriedades
 
-### ?? Talhão
-- Cadastro de talhões vinculados a uma propriedade
-- Consulta de talhões por propriedade
-- Atualização de dados do talhão
-- Exclusão de talhões
+### ğŸŒ¾ TalhÃ£o
+- Cadastro de talhÃµes vinculados a uma propriedade
+- Consulta de talhÃµes por propriedade
+- AtualizaÃ§Ã£o de dados do talhÃ£o
+- ExclusÃ£o de talhÃµes
 
-*Este serviço não é responsável por informações operacionais, leituras de sensores ou dados produtivos.*
+*Este serviÃ§o nÃ£o Ã© responsÃ¡vel por informaÃ§Ãµes operacionais, leituras de sensores ou dados produtivos.*
 
-## ?? Autenticação (Direcionamento Futuro)
+## ğŸš€ ExecuÃ§Ã£o Local com Docker
 
-O projeto está sendo preparado para:
-- Autenticação via AWS Cognito (JWT)
-- Possibilidade de autenticação simulada (Mock) durante desenvolvimento local
+### PrÃ©-requisitos
 
-A implementação da autenticação será realizada em etapas futuras.
+- [Docker](https://www.docker.com/get-started/) instalado
 
-## ?? Stack Tecnológica (Planejada)
+### Comandos para rodar
 
-- .NET 8.0
-- ASP.NET Core Web API
-- Entity Framework Core
-- SQL Server
-- Docker
-- AutoMapper
-- FluentValidation
-- Swagger / OpenAPI
-
-## ?? Status Atual
-
-- ? Estrutura da solução criada
-- ? Projetos organizados por camada
-- ? Projetos de testes criados
-- ? Implementação do domínio (em andamento)
-- ? Implementação dos casos de uso
-- ? Implementação da API e persistência
-
-## ?? Observações
-
-Este README representa o estado inicial do projeto e tem como objetivo:
-
-- Documentar a estrutura base da solução
-- Definir claramente o escopo de responsabilidade do microserviço
-- Servir como ponto de partida para evolução futura da plataforma
-
-Detalhamentos técnicos mais profundos serão adicionados conforme o desenvolvimento avançar.
+Na raiz do projeto, execute:
