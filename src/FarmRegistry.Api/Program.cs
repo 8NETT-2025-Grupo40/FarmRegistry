@@ -5,7 +5,9 @@ using FarmRegistry.Application.Configuration;
 using FarmRegistry.Application.Extensions;
 using FarmRegistry.Infrastructure.Extensions;
 using FarmRegistry.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +45,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 Console.WriteLine($"[STARTUP] Connection String: {connectionString}");
 
 builder.Services.AddApiServices(builder.Configuration);
+
+// Add Health Checks
+builder.Services.AddFarmRegistryHealthChecks();
 
 var app = builder.Build();
 
@@ -92,6 +97,35 @@ else
 }
 
 app.UseAuthorization();
+
+// Health Checks endpoint with custom JSON response
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        
+        var response = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(entry => new
+            {
+                name = entry.Key,
+                status = entry.Value.Status.ToString(),
+                description = entry.Value.Description,
+                duration = entry.Value.Duration.TotalMilliseconds
+            }),
+            totalDuration = report.TotalDuration.TotalMilliseconds
+        };
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
+    }
+}).AllowAnonymous();
+
 app.MapControllers();
 
 app.Run();
