@@ -1,4 +1,4 @@
-using FarmRegistry.Api.HealthChecks;
+﻿using FarmRegistry.Api.HealthChecks;
 using FarmRegistry.Infrastructure.Persistence;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -9,6 +9,10 @@ public static class HealthCheckExtensions
     public static IServiceCollection AddFarmRegistryHealthChecks(this IServiceCollection services)
     {
         services.AddHealthChecks()
+            .AddCheck(
+                name: "self",
+                check: () => HealthCheckResult.Healthy(),
+                tags: ["live"])
             .AddDbContextCheck<FarmRegistryDbContext>(
                 name: "database",
                 failureStatus: HealthStatus.Unhealthy,
@@ -17,7 +21,7 @@ public static class HealthCheckExtensions
             .AddCheck<DatabaseHealthCheck>(
                 name: "database_migrations",
                 failureStatus: HealthStatus.Degraded,
-                tags: new[] { "db", "migrations" }
+                tags: new[] { "db", "migrations", "ready" }
             );
 
         return services;

@@ -7,6 +7,7 @@ using FarmRegistry.Infrastructure.Extensions;
 using FarmRegistry.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,25 +59,24 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<FarmRegistryDbContext>();
     dbContext.Database.Migrate();
-
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        var apiVersionDescriptionProvider = app.Services.GetRequiredService<Asp.Versioning.ApiExplorer.IApiVersionDescriptionProvider>();
-        foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
-        {
-            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
-                description.GroupName.ToUpperInvariant());
-        }
-
-        // Configure Swagger UI to be served at root in development
-        options.RoutePrefix = string.Empty; // Serve Swagger UI at root "/"
-    });
-
-    // Redirect root URL to Swagger UI
-    app.MapGet("/", () => Results.Redirect("/swagger"))
-       .ExcludeFromDescription();
 }
+
+app.UseSwagger(options =>
+{
+    options.RouteTemplate = "registry/swagger/{documentName}/swagger.json";
+});
+
+app.UseSwaggerUI(options =>
+{
+    var apiVersionDescriptionProvider = app.Services.GetRequiredService<Asp.Versioning.ApiExplorer.IApiVersionDescriptionProvider>();
+    foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+    {
+        options.SwaggerEndpoint($"/registry/swagger/{description.GroupName}/swagger.json",
+            description.GroupName.ToUpperInvariant());
+    }
+
+    options.RoutePrefix = "registry/swagger";
+});
 
 // Remover ou comentar UseHttpsRedirection para ambiente Docker
 // app.UseHttpsRedirection();
@@ -98,32 +98,52 @@ else
 
 app.UseAuthorization();
 
-// Health Checks endpoint with custom JSON response
-app.MapHealthChecks("/health", new HealthCheckOptions
+static Task WriteHealthResponse(HttpContext context, HealthReport report)
 {
-    ResponseWriter = async (context, report) =>
-    {
-        context.Response.ContentType = "application/json";
-        
-        var response = new
-        {
-            status = report.Status.ToString(),
-            checks = report.Entries.Select(entry => new
-            {
-                name = entry.Key,
-                status = entry.Value.Status.ToString(),
-                description = entry.Value.Description,
-                duration = entry.Value.Duration.TotalMilliseconds
-            }),
-            totalDuration = report.TotalDuration.TotalMilliseconds
-        };
+    context.Response.ContentType = "application/json";
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
+    var response = new
+    {
+        status = report.Status.ToString(),
+        checks = report.Entries.Select(entry => new
         {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        }));
-    }
+            name = entry.Key,
+            status = entry.Value.Status.ToString(),
+            description = entry.Value.Description,
+            duration = entry.Value.Duration.TotalMilliseconds
+        }),
+        totalDuration = report.TotalDuration.TotalMilliseconds
+    };
+
+    return context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    }));
+}
+
+app.MapHealthChecks("/registry/health", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("live"),
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+        [HealthStatus.Degraded] = StatusCodes.Status200OK,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+    },
+    ResponseWriter = WriteHealthResponse
+}).AllowAnonymous();
+
+app.MapHealthChecks("/registry/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+        [HealthStatus.Degraded] = StatusCodes.Status503ServiceUnavailable,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+    },
+    ResponseWriter = WriteHealthResponse
 }).AllowAnonymous();
 
 app.MapControllers();
