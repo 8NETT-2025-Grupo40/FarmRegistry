@@ -1,0 +1,15 @@
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": [
+				"secretsmanager:GetSecretValue"
+			],
+			"Resource": [
+				"arn:aws:secretsmanager:us-east-1:431104159307:secret:farm-registry-connection-string-*",
+				"arn:aws:secretsmanager:us-east-1:431104159307:secret:farm-registry-cognito-config-*"
+			]
+		}
+	]
+}

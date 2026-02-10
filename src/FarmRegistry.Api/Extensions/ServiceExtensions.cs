@@ -2,8 +2,6 @@ using FarmRegistry.Api.Authentication;
 using FarmRegistry.Application.Common;
 using FarmRegistry.Application.Configuration;
 using FarmRegistry.Application.Contracts.Common;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 
 namespace FarmRegistry.Api.Extensions;
 
@@ -29,7 +27,7 @@ public static class ServiceExtensions
                 break;
 
             case AuthenticationMode.Cognito:
-                ConfigureJwtAuthentication(services, authOptions.Jwt);
+                services.AddCognitoUserAuthentication(configuration);
                 services.AddScoped<IUserContext, CognitoAuthenticationProvider>();
                 break;
 
@@ -39,29 +37,5 @@ public static class ServiceExtensions
         }
 
         return services;
-    }
-
-    private static void ConfigureJwtAuthentication(IServiceCollection services, JwtOptions jwtOptions)
-    {
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.Authority = jwtOptions.Authority;
-                options.Audience = jwtOptions.Audience;
-                options.RequireHttpsMetadata = jwtOptions.RequireHttpsMetadata;
-
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = jwtOptions.ValidateIssuer,
-                    ValidateAudience = jwtOptions.ValidateAudience,
-                    ValidateLifetime = jwtOptions.ValidateLifetime,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtOptions.ValidIssuer,
-                    ValidAudience = jwtOptions.Audience,
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
-
-        services.AddAuthorization();
     }
 }

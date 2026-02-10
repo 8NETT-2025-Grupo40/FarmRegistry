@@ -23,41 +23,42 @@ k8s/
 
 ### Prerequisites
 
-1. **EKS Cluster**: `frm` cluster must exist (managed by `FarmRegistry.Infrastructure` repository)
-2. **Namespace**: `frm` namespace created
+1. **EKS Cluster**: `agro-tech` cluster must exist
+2. **Namespace**: `farm-registry` namespace created
 3. **Add-ons**: AWS Load Balancer Controller and External Secrets Operator installed
 4. **ECR Image**: Docker image pushed to ECR
-5. **AWS Secrets**: Connection string and JWT config in AWS Secrets Manager
+5. **AWS Secrets**: `farm-registry-connection-string` and `farm-registry-cognito-config` in AWS Secrets Manager
+6. **IAM Policy**: `infrastructure/iam/farm-registry-policy.json` created in IAM and attached to the IRSA ServiceAccount
 
 ### Deploy with Helm
 
 ```bash
 # Update kubeconfig
-aws eks update-kubeconfig --name frm --region us-east-1
+aws eks update-kubeconfig --name agro-tech --region us-east-1
 
 # Deploy
-helm upgrade --install frm-user-api ./k8s \
-  --namespace frm \
+helm upgrade --install farm-registry ./k8s \
+  --namespace farm-registry \
   --create-namespace \
   --set image.tag=latest \
   --wait
 
 # Check status
-kubectl get pods -n fcg -l app.kubernetes.io/name=frm-user-api
-kubectl get ingress -n fcg
+kubectl get pods -n farm-registry -l app.kubernetes.io/name=farm-registry-api
+kubectl get ingress -n farm-registry
 ```
 
 ### Override Values
 
 ```bash
 # Use custom values file
-helm upgrade --install frm-user-api ./k8s \
-  --namespace frm \
+helm upgrade --install farm-registry ./k8s \
+  --namespace farm-registry \
   -f custom-values.yaml
 
 # Override specific values
-helm upgrade --install frm-user-api ./k8s \
-  --namespace frm \
+helm upgrade --install farm-registry ./k8s \
+  --namespace farm-registry \
   --set image.tag=v1.2.3 \
   --set replicaCount=3 \
   --set autoscaling.maxReplicas=10
@@ -69,19 +70,19 @@ helm upgrade --install frm-user-api ./k8s \
 
 | Value | Default | Description |
 |-------|---------|-------------|
-| `image.repository` | `478511033947.dkr.ecr.us-east-1.amazonaws.com/frm-user-api` | ECR repository |
+| `image.repository` | `431104159307.dkr.ecr.us-east-1.amazonaws.com/farm-registry-api` | ECR repository |
 | `image.tag` | `latest` | Image tag (overridden by CI/CD with git SHA) |
-| `replicaCount` | `2` | Initial number of pods |
+| `replicaCount` | `1` | Initial number of pods |
 | `containerPort` | `5067` | ASP.NET Core listening port |
 | `service.type` | `ClusterIP` | Kubernetes service type |
 | `service.port` | `80` | Service port |
 | `ingress.enabled` | `true` | Enable ALB ingress |
 | `ingress.className` | `alb` | Ingress controller class |
 | `autoscaling.enabled` | `true` | Enable HPA |
-| `autoscaling.minReplicas` | `2` | Minimum pods |
-| `autoscaling.maxReplicas` | `5` | Maximum pods |
+| `autoscaling.minReplicas` | `1` | Minimum pods |
+| `autoscaling.maxReplicas` | `3` | Maximum pods |
 | `serviceAccount.create` | `false` | ServiceAccount created by eksctl (IRSA) |
-| `serviceAccount.name` | `frm-user-api-sa` | ServiceAccount name |
+| `serviceAccount.name` | `farm-registry-api-sa` | ServiceAccount name |
 
 ### Environment Variables
 
@@ -90,17 +91,27 @@ Non-sensitive environment variables are configured in `values.yaml`:
 ```yaml
 env:
   ASPNETCORE_URLS: "http://+:5067"
-  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://cloudwatch-agent.amazon-cloudwatch.svc.cluster.local:4315"
+  Authentication__AuthMode: "COGNITO"
 ```
 
 ### Secrets
 
 Secrets are automatically synced from AWS Secrets Manager via External Secrets Operator:
 
-- **Connection String**: `frm-api-user-connection-string`
-- **JWT Config**: `frm-jwt-config`
+- **Connection String**: `farm-registry-connection-string`
+- **Cognito Config**: `farm-registry-cognito-config`
 
-The `ExternalSecret` resource watches these secrets and creates a Kubernetes Secret named `frm-user-api-secrets`.
+**Cognito config JSON format:**
+```json
+{
+  "region": "us-east-1",
+  "userPoolId": "us-east-1_1VGl4idF2",
+  "clientId": "11sggm00trda1etpmimiqah1cp"
+}
+```
+
+The `ExternalSecret` resource watches these secrets and creates a Kubernetes Secret named `farm-registry-farm-registry-api-secrets`.
 
 ## 🔒 Security
 
@@ -108,17 +119,17 @@ The `ExternalSecret` resource watches these secrets and creates a Kubernetes Sec
 
 The deployment uses IRSA to grant pods AWS permissions without storing credentials:
 
-1. **ServiceAccount**: `frm-user-api-sa` (in `frm` namespace)
+1. **ServiceAccount**: `farm-registry-api-sa` (in `farm-registry` namespace)
 2. **IAM Role**: Auto-created by eksctl with OIDC trust
-3. **IAM Policy**: `FRMExternalSecretsPolicy` (allows reading secrets)
+3. **IAM Policy**: `FarmRegistryAPIPolicy` (allows reading secrets)
 
 **Created by CI/CD workflow:**
 ```bash
 eksctl create iamserviceaccount \
-  --cluster=frm \
-  --namespace=frm \
-  --name=frm-user-api-sa \
-  --attach-policy-arn=arn:aws:iam::478511033947:policy/FRMExternalSecretsPolicy \
+  --cluster=agro-tech \
+  --namespace=farm-registry \
+  --name=farm-registry-api-sa \
+  --attach-policy-arn=arn:aws:iam::431104159307:policy/FarmRegistryAPIPolicy \
   --approve \
   --override-existing-serviceaccounts
 ```
@@ -128,11 +139,11 @@ eksctl create iamserviceaccount \
 ```yaml
 resources:
   requests:
-    cpu: 100m      # Minimum CPU
-    memory: 128Mi  # Minimum memory
+    cpu: 150m      # Minimum CPU
+    memory: 256Mi  # Minimum memory
   limits:
-    cpu: 500m      # Maximum CPU
-    memory: 512Mi  # Maximum memory
+    cpu: 750m      # Maximum CPU
+    memory: 768Mi  # Maximum memory
 ```
 
 ## 🌐 Networking
@@ -148,16 +159,16 @@ resources:
 - **Class**: `alb`
 - **Scheme**: `internet-facing`
 - **Target Type**: `ip`
-- **Group**: `frm` (shared with other APIs)
-- **Health Check**: `/health`
+- **Group**: `agro-tech` (shared with other APIs)
+- **Health Check**: `/registry/ready`
 - **Protocol**: HTTP (port 80)
 
 **Annotations:**
 ```yaml
 alb.ingress.kubernetes.io/scheme: internet-facing
 alb.ingress.kubernetes.io/target-type: ip
-alb.ingress.kubernetes.io/group.name: fcg  # Shares ALB with other services
-alb.ingress.kubernetes.io/healthcheck-path: /health
+alb.ingress.kubernetes.io/group.name: agro-tech  # Shares ALB with other services
+alb.ingress.kubernetes.io/healthcheck-path: /registry/ready
 ```
 
 ### Path-Based Routing
@@ -165,8 +176,8 @@ alb.ingress.kubernetes.io/healthcheck-path: /health
 Multiple APIs can share the same ALB by using the `group.name` annotation. Each API defines its own path:
 
 ```yaml
-# User API
-path: /
+# Farm Registry API
+path: /registry
 
 # Future: Order API could use
 path: /orders
@@ -181,17 +192,17 @@ Automatically scales pods based on CPU and memory utilization:
 ```yaml
 autoscaling:
   enabled: true
-  minReplicas: 2    # Minimum pods (high availability)
-  maxReplicas: 5    # Maximum pods (cost control)
+  minReplicas: 1    # Minimum pods
+  maxReplicas: 3    # Maximum pods
   cpu: 60          # Scale up at 60% CPU
   memory: 70       # Scale up at 70% memory
 ```
 
 **Scaling behavior:**
-- Starts with 2 pods
+- Starts with 1 pod
 - Scales up when CPU > 60% OR memory > 70%
 - Scales down when below thresholds (with cooldown)
-- Never goes below 2 or above 5 pods
+- Never goes below 1 or above 3 pods
 
 ## 🔍 Monitoring
 
@@ -199,53 +210,53 @@ autoscaling:
 
 ```bash
 # Get ALB URL
-ALB_URL=$(kubectl get ingress -n frm frm-user-api-frm-user-api -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+ALB_URL=$(kubectl get ingress -n farm-registry farm-registry-farm-registry-api -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
-# Test health endpoint
-curl http://$ALB_URL/health
+# Test readiness endpoint
+curl http://$ALB_URL/registry/ready
 ```
 
 ### Pod Status
 
 ```bash
 # List pods
-kubectl get pods -n frm -l app.kubernetes.io/name=frm-user-api
+kubectl get pods -n farm-registry -l app.kubernetes.io/name=farm-registry-api
 
 # Watch pod status
-kubectl get pods -n frm -l app.kubernetes.io/name=frm-user-api -w
+kubectl get pods -n farm-registry -l app.kubernetes.io/name=farm-registry-api -w
 
 # Describe pod
-kubectl describe pod -n frm <pod-name>
+kubectl describe pod -n farm-registry <pod-name>
 
 # View logs
-kubectl logs -n frm <pod-name>
+kubectl logs -n farm-registry <pod-name>
 
 # Follow logs
-kubectl logs -n frm <pod-name> -f
+kubectl logs -n farm-registry <pod-name> -f
 ```
 
 ### Resource Usage
 
 ```bash
 # Pod metrics (requires metrics-server)
-kubectl top pods -n frm -l app.kubernetes.io/name=frm-user-api
+kubectl top pods -n farm-registry -l app.kubernetes.io/name=farm-registry-api
 
 # HPA status
-kubectl get hpa -n frm frm-user-api
-kubectl describe hpa -n frm frm-user-api
+kubectl get hpa -n farm-registry farm-registry-farm-registry-api
+kubectl describe hpa -n farm-registry farm-registry-farm-registry-api
 ```
 
 ### External Secrets Status
 
 ```bash
 # Check ExternalSecret
-kubectl get externalsecret -n frm frm-user-api-secrets
-kubectl describe externalsecret -n frm frm-user-api-secrets
+kubectl get externalsecret -n farm-registry farm-registry-farm-registry-api-externalsecret
+kubectl describe externalsecret -n farm-registry farm-registry-farm-registry-api-externalsecret
 
 # Check if Kubernetes Secret was created
-kubectl get secret -n frm frm-user-api-secrets
+kubectl get secret -n farm-registry farm-registry-farm-registry-api-secrets
 # Verify secret data (base64 encoded)
-kubectl get secret -n frm frm-user-api-secrets -o yaml
+kubectl get secret -n farm-registry farm-registry-farm-registry-api-secrets -o yaml
 ```
 
 ## 🧹 Cleanup
@@ -253,7 +264,7 @@ kubectl get secret -n frm frm-user-api-secrets -o yaml
 ### Uninstall Helm Release
 
 ```bash
-helm uninstall frm-user-api -n frm
+helm uninstall farm-registry -n farm-registry
 ```
 
 This removes:
@@ -274,9 +285,9 @@ This removes:
 
 ```bash
 eksctl delete iamserviceaccount \
-  --cluster=frm \
-  --namespace=frm \
-  --name=frm-user-api-sa \
+  --cluster=agro-tech \
+  --namespace=farm-registry \
+  --name=farm-registry-api-sa \
   --region=us-east-1
 ```
 
@@ -286,27 +297,27 @@ eksctl delete iamserviceaccount \
 
 ```bash
 # Get Helm release status
-helm status frm-user-api -n frm
+helm status farm-registry -n farm-registry
 
 # View Helm history
-helm history frm-user-api -n frm
+helm history farm-registry -n farm-registry
 
 # Rollback to previous version
-helm rollback frm-user-api -n frm
+helm rollback farm-registry -n farm-registry
 ```
 
 ### Template Rendering Issues
 
 ```bash
 # Dry-run to see rendered templates
-helm install frm-user-api ./k8s \
-  --namespace frm \
+helm install farm-registry ./k8s \
+  --namespace farm-registry \
   --dry-run \
   --debug
 
 # Render templates without installing
-helm template frm-user-api ./k8s \
-  --namespace frm \
+helm template farm-registry ./k8s \
+  --namespace farm-registry \
   --set image.tag=test
 ```
 
@@ -314,13 +325,13 @@ helm template frm-user-api ./k8s \
 
 ```bash
 # Modify values.yaml, then upgrade
-helm upgrade frm-user-api ./k8s \
-  --namespace frm \
+helm upgrade farm-registry ./k8s \
+  --namespace farm-registry \
   --wait
 
 # Force recreation of pods
-helm upgrade frm-user-api ./k8s \
-  --namespace frm \
+helm upgrade farm-registry ./k8s \
+  --namespace farm-registry \
   --recreate-pods \
   --wait
 ```

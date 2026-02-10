@@ -1,12 +1,18 @@
+# Service: expõe os pods internamente no cluster
+# ClusterIP = apenas acessível dentro do cluster
+# O Ingress (ALB) roteia tráfego externo para este Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "frm-user-api.fullname" . }}
-  labels: {{- include "frm-user-api.labels" . | nindent 4 }}
+  name: {{ include "farm-registry-api.fullname" . }}
+  labels:
+    {{- include "farm-registry-api.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
-  selector: {{- include "frm-user-api.selectorLabels" . | nindent 4 }}
   ports:
-    - name: http
-      port: {{ .Values.service.port }}
-      targetPort: {{ .Values.containerPort }}
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "farm-registry-api.selectorLabels" . | nindent 4 }}
