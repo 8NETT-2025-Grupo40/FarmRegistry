@@ -10,7 +10,7 @@ namespace FarmRegistry.Api.Controllers.v1;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route("api/v{version:apiVersion}/fields")]
+[Route("registry/api/v{version:apiVersion}/fields")]
 [Produces("application/json")]
 [Authorize]
 public class FieldsController : BaseController
@@ -25,10 +25,10 @@ public class FieldsController : BaseController
     }
 
     /// <summary>
-    /// Cria um novo talh„o
+    /// Cria um novo talh√£o
     /// </summary>
-    /// <param name="request">Dados do talh„o</param>
-    /// <returns>Talh„o criado</returns>
+    /// <param name="request">Dados do talh√£o</param>
+    /// <returns>Talh√£o criado</returns>
     [HttpPost]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -45,7 +45,7 @@ public class FieldsController : BaseController
             LogUserInfo("CreateFieldBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domÌnio",
+                Title = "Erro de dom√≠nio",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -53,10 +53,10 @@ public class FieldsController : BaseController
     }
 
     /// <summary>
-    /// ObtÈm talhıes filtrados por fazenda
+    /// Obt√©m talh√µes filtrados por fazenda
     /// </summary>
-    /// <param name="farmId">ID da fazenda (obrigatÛrio)</param>
-    /// <returns>Lista de talhıes</returns>
+    /// <param name="farmId">ID da fazenda (obrigat√≥rio)</param>
+    /// <returns>Lista de talh√µes</returns>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<FieldResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -67,8 +67,8 @@ public class FieldsController : BaseController
             LogUserInfo("GetFieldsBadRequestRequiredParam", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Par‚metro obrigatÛrio",
-                Detail = "O par‚metro 'farmId' È obrigatÛrio.",
+                Title = "Par√¢metro obrigat√≥rio",
+                Detail = "O par√¢metro 'farmId' √© obrigat√≥rio.",
                 Status = StatusCodes.Status400BadRequest
             });
         }
@@ -84,7 +84,7 @@ public class FieldsController : BaseController
             LogUserInfo("GetFieldsBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domÌnio",
+                Title = "Erro de dom√≠nio",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -92,10 +92,10 @@ public class FieldsController : BaseController
     }
 
     /// <summary>
-    /// ObtÈm um talh„o por ID
+    /// Obt√©m um talh√£o por ID
     /// </summary>
-    /// <param name="id">ID do talh„o</param>
-    /// <returns>Talh„o encontrado</returns>
+    /// <param name="id">ID do talh√£o</param>
+    /// <returns>Talh√£o encontrado</returns>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -107,8 +107,8 @@ public class FieldsController : BaseController
             LogUserInfo("GetFieldByIdNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talh„o n„o encontrado",
-                Detail = $"Talh„o com ID {id} n„o foi encontrado.",
+                Title = "Talh√£o n√£o encontrado",
+                Detail = $"Talh√£o com ID {id} n√£o foi encontrado.",
                 Status = StatusCodes.Status404NotFound
             });
         }
@@ -117,11 +117,11 @@ public class FieldsController : BaseController
     }
 
     /// <summary>
-    /// Atualiza um talh„o
+    /// Atualiza um talh√£o
     /// </summary>
-    /// <param name="id">ID do talh„o</param>
-    /// <param name="request">Dados atualizados do talh„o</param>
-    /// <returns>Talh„o atualizado</returns>
+    /// <param name="id">ID do talh√£o</param>
+    /// <param name="request">Dados atualizados do talh√£o</param>
+    /// <returns>Talh√£o atualizado</returns>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -134,7 +134,7 @@ public class FieldsController : BaseController
             return BadRequest(new ProblemDetails
             {
                 Title = "ID inconsistente",
-                Detail = "O ID da URL n„o confere com o ID do corpo da requisiÁ„o.",
+                Detail = "O ID da URL n√£o confere com o ID do corpo da requisi√ß√£o.",
                 Status = StatusCodes.Status400BadRequest
             });
         }
@@ -150,7 +150,7 @@ public class FieldsController : BaseController
             LogUserInfo("UpdateFieldBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domÌnio",
+                Title = "Erro de dom√≠nio",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -158,10 +158,10 @@ public class FieldsController : BaseController
     }
 
     /// <summary>
-    /// Ativa um talh„o
+    /// Ativa um talh√£o
     /// </summary>
-    /// <param name="id">ID do talh„o</param>
-    /// <returns>Talh„o ativado</returns>
+    /// <param name="id">ID do talh√£o</param>
+    /// <returns>Talh√£o ativado</returns>
     [HttpPatch("{id:guid}/activate")]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -178,7 +178,7 @@ public class FieldsController : BaseController
             LogUserInfo("ActivateFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talh„o n„o encontrado",
+                Title = "Talh√£o n√£o encontrado",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
             });
@@ -186,10 +186,10 @@ public class FieldsController : BaseController
     }
 
     /// <summary>
-    /// Desativa um talh„o
+    /// Desativa um talh√£o
     /// </summary>
-    /// <param name="id">ID do talh„o</param>
-    /// <returns>Talh„o desativado</returns>
+    /// <param name="id">ID do talh√£o</param>
+    /// <returns>Talh√£o desativado</returns>
     [HttpPatch("{id:guid}/deactivate")]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -206,7 +206,7 @@ public class FieldsController : BaseController
             LogUserInfo("DeactivateFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talh„o n„o encontrado",
+                Title = "Talh√£o n√£o encontrado",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
             });
@@ -214,9 +214,9 @@ public class FieldsController : BaseController
     }
 
     /// <summary>
-    /// Remove um talh„o (deleÁ„o lÛgica)
+    /// Remove um talh√£o (dele√ß√£o l√≥gica)
     /// </summary>
-    /// <param name="id">ID do talh„o</param>
+    /// <param name="id">ID do talh√£o</param>
     /// <returns>No content</returns>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -234,7 +234,7 @@ public class FieldsController : BaseController
             LogUserInfo("DeleteFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talh„o n„o encontrado",
+                Title = "Talh√£o n√£o encontrado",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
             });

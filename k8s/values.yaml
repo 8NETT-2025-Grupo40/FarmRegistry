@@ -1,0 +1,121 @@
+# Configuração da imagem Docker no ECR (Elastic Container Registry)
+# O workflow do GitHub Actions sobrescreve a tag com o SHA do commit
+image:
+  repository: 431104159307.dkr.ecr.us-east-1.amazonaws.com/farm-registry-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Número de pods que serão criados inicialmente
+# O HPA (Horizontal Pod Autoscaler) pode aumentar/diminuir baseado em carga
+replicaCount: 1
+
+# Porta do container
+containerPort: 5067
+
+# Service expõe os pods internamente no cluster
+# ClusterIP = apenas acessível dentro do cluster (não exposto externamente)
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5067
+
+# Ingress cria um ALB (Application Load Balancer) para acesso externo
+# O AWS Load Balancer Controller converte esse recurso em um ALB real na AWS
+# Compartilhado com outras APIs via group.name: agro-tech
+ingress:
+  enabled: true
+  className: alb # usa o AWS Load Balancer Controller
+  host: '' # deixe vazio para aceitar qualquer hostname
+  annotations:
+    # scheme: internet-facing = ALB público (acessível pela internet)
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # target-type: ip = ALB roteia diretamente para IPs dos pods (mais eficiente)
+    alb.ingress.kubernetes.io/target-type: ip
+    # group.name: permite múltiplos Ingress compartilharem o mesmo ALB
+    alb.ingress.kubernetes.io/group.name: agro-tech
+    # healthcheck-path: endpoint de readiness usado pelo ALB para rotear tráfego
+    alb.ingress.kubernetes.io/healthcheck-path: /registry/ready
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+
+  # Path único para FarmRegistry - todas as rotas começam com /registry
+  paths:
+    - path: /registry
+      pathType: Prefix
+
+# Recursos garantidos (requests) e limites (limits) para cada container
+# requests: Kubernetes garante esses recursos ao agendar o pod
+# limits: Valores máximos que o container pode usar (exceder memory = pod é morto)
+resources:
+  requests:
+    cpu: 150m # 0.15 CPU
+    memory: 256Mi # 256 megabytes
+  limits:
+    cpu: 750m # 0.75 CPU
+    memory: 768Mi # 768 megabytes
+
+# Variáveis de ambiente não sensíveis (valores públicos)
+env:
+  ASPNETCORE_URLS: http://+:5067
+  ASPNETCORE_ENVIRONMENT: Production
+  AWS__Region: us-east-1
+  # Modo de autenticação para EKS (MOCK apenas para ambiente local)
+  Authentication__AuthMode: COGNITO
+  # OpenTelemetry (auto-instrumentação via anotações)
+  OTEL_SERVICE_NAME: farm-registry-api
+  OTEL_DOTNET_AUTO_TRACES_ADDITIONAL_SOURCES: FarmRegistry
+  # OTEL envia traces para CloudWatch Agent DaemonSet (Application Signals)
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://cloudwatch-agent.amazon-cloudwatch.svc.cluster.local:4315
+
+# Anotações para auto-instrumentação .NET pelo add-on do CloudWatch Observability
+# Como a imagem da API usa Alpine, o runtime correto é linux-musl-x64
+podAnnotations:
+  instrumentation.opentelemetry.io/inject-dotnet: "true"
+  instrumentation.opentelemetry.io/otel-dotnet-auto-runtime: "linux-musl-x64"
+
+# Secrets sensíveis são gerenciados pelo External Secrets Operator
+# Sincroniza automaticamente do AWS Secrets Manager para Kubernetes Secrets
+secrets:
+  # Connection string do SQL Server/RDS
+  connectionString:
+    awsSecretName: farm-registry-connection-string
+  # Configurações do Cognito (JSON: region, userPoolId, clientId)
+  cognitoConfig:
+    awsSecretName: farm-registry-cognito-config
+
+# HPA (Horizontal Pod Autoscaler) - escalonamento automático baseado em métricas
+# Aumenta/diminui número de pods automaticamente baseado em carga
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  cpu: 60 # escala quando CPU média > 60%
+  memory: 70 # escala quando memória média > 70%
+
+# ServiceAccount com IRSA (IAM Roles for Service Accounts)
+# Permite que pods assumam roles IAM sem credenciais estáticas
+serviceAccount:
+  create: false # false porque o eksctl cria durante o deploy (workflow)
+  name: farm-registry-api-sa # deve corresponder ao nome usado no workflow
+  annotations: {} # eksctl injeta automaticamente eks.amazonaws.com/role-arn
+
+# Tempo de espera para graceful shutdown
+terminationGracePeriodSeconds: 30
+
+# Probes de saúde
+livenessProbe:
+  httpGet:
+    path: /registry/health
+    port: 5067
+  initialDelaySeconds: 30
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /registry/ready
+    port: 5067
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3

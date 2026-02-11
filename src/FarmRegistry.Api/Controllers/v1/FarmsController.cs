@@ -10,7 +10,7 @@ namespace FarmRegistry.Api.Controllers.v1;
 
 [ApiController]
 [ApiVersion("1.0")]
-[Route("api/v{version:apiVersion}/farms")]
+[Route("registry/api/v{version:apiVersion}/farms")]
 [Produces("application/json")]
 [Authorize]
 public class FarmsController : BaseController
@@ -45,7 +45,7 @@ public class FarmsController : BaseController
         {
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domÌnio",
+                Title = "Erro de dom√≠nio",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -53,7 +53,7 @@ public class FarmsController : BaseController
     }
 
     /// <summary>
-    /// ObtÈm todas as fazendas do usu·rio
+    /// Obt√©m todas as fazendas do usu√°rio
     /// </summary>
     /// <returns>Lista de fazendas</returns>
     [HttpGet]
@@ -66,7 +66,7 @@ public class FarmsController : BaseController
     }
 
     /// <summary>
-    /// ObtÈm uma fazenda por ID
+    /// Obt√©m uma fazenda por ID
     /// </summary>
     /// <param name="id">ID da fazenda</param>
     /// <returns>Fazenda encontrada</returns>
@@ -81,8 +81,8 @@ public class FarmsController : BaseController
             LogUserInfo("GetFarmByIdNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda n„o encontrada",
-                Detail = $"Fazenda com ID {id} n„o foi encontrada.",
+                Title = "Fazenda n√£o encontrada",
+                Detail = $"Fazenda com ID {id} n√£o foi encontrada.",
                 Status = StatusCodes.Status404NotFound
             });
         }
@@ -108,7 +108,7 @@ public class FarmsController : BaseController
             return BadRequest(new ProblemDetails
             {
                 Title = "ID inconsistente",
-                Detail = "O ID da URL n„o confere com o ID do corpo da requisiÁ„o.",
+                Detail = "O ID da URL n√£o confere com o ID do corpo da requisi√ß√£o.",
                 Status = StatusCodes.Status400BadRequest
             });
         }
@@ -124,7 +124,7 @@ public class FarmsController : BaseController
             LogUserInfo("UpdateFarmBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domÌnio",
+                Title = "Erro de dom√≠nio",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -152,7 +152,7 @@ public class FarmsController : BaseController
             LogUserInfo("ActivateFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda n„o encontrada",
+                Title = "Fazenda n√£o encontrada",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
             });
@@ -180,7 +180,7 @@ public class FarmsController : BaseController
             LogUserInfo("DeactivateFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda n„o encontrada",
+                Title = "Fazenda n√£o encontrada",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
             });
@@ -188,7 +188,7 @@ public class FarmsController : BaseController
     }
 
     /// <summary>
-    /// Remove uma fazenda (deleÁ„o lÛgica)
+    /// Remove uma fazenda (dele√ß√£o l√≥gica)
     /// </summary>
     /// <param name="id">ID da fazenda</param>
     /// <returns>No content</returns>
@@ -208,7 +208,7 @@ public class FarmsController : BaseController
             LogUserInfo("DeleteFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda n„o encontrada",
+                Title = "Fazenda n√£o encontrada",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
             });

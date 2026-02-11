@@ -1,0 +1,80 @@
+# Deployment: gerencia os pods da aplicação (Farm Registry API)
+# CloudWatch Application Signals pode coletar traces automaticamente via DaemonSet
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "farm-registry-api.fullname" . }}
+  labels:
+    {{- include "farm-registry-api.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "farm-registry-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "farm-registry-api.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "farm-registry-api.serviceAccountName" . }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            # Variáveis não sensíveis (hardcoded)
+            - name: ASPNETCORE_URLS
+              value: {{ .Values.env.ASPNETCORE_URLS | quote }}
+            - name: ASPNETCORE_ENVIRONMENT
+              value: {{ .Values.env.ASPNETCORE_ENVIRONMENT | quote }}
+            - name: AWS__Region
+              value: {{ .Values.env.AWS__Region | quote }}
+            - name: Authentication__AuthMode
+              value: {{ .Values.env.Authentication__AuthMode | quote }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.env.OTEL_SERVICE_NAME | quote }}
+            - name: OTEL_DOTNET_AUTO_TRACES_ADDITIONAL_SOURCES
+              value: {{ .Values.env.OTEL_DOTNET_AUTO_TRACES_ADDITIONAL_SOURCES | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.env.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+
+            # Secrets sensíveis (External Secrets -> Kubernetes Secret)
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "farm-registry-api.fullname" . }}-secrets
+                  key: connectionString
+
+            # Cognito config (extraído do JSON secret)
+            - name: COGNITO_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "farm-registry-api.fullname" . }}-secrets
+                  key: cognitoRegion
+            - name: COGNITO_USER_POOL_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "farm-registry-api.fullname" . }}-secrets
+                  key: cognitoUserPoolId
+            - name: COGNITO_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "farm-registry-api.fullname" . }}-secrets
+                  key: cognitoClientId
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
