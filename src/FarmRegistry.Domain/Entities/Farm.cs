@@ -5,6 +5,7 @@ namespace FarmRegistry.Domain.Entities;
 public sealed class Farm
 {
     public Guid FarmId { get; private set; }
+    public Guid OwnerId { get; private set; }
 
     public string Name { get; private set; } = string.Empty;
     public string City { get; private set; } = string.Empty;
@@ -19,13 +20,15 @@ public sealed class Farm
     // Construtor vazio para Entity Framework
     private Farm() { }
 
-    public Farm(string name, string city, string state, DateTime? createdAt = null)
+    public Farm(Guid ownerId, string name, string city, string state, DateTime? createdAt = null)
     {
+        ValidateOwnerId(ownerId);
         ValidateName(name);
         ValidateCity(city);
         ValidateState(state);
 
         FarmId = Guid.NewGuid();
+        OwnerId = ownerId;
         Name = name.Trim();
         City = city.Trim();
         State = state.Trim().ToUpperInvariant();
@@ -94,6 +97,12 @@ public sealed class Farm
             throw new DomainException("Estado é obrigatório.");
         if (state.Trim().Length != 2)
             throw new DomainException("Estado deve conter 2 caracteres (UF).");
+    }
+
+    private static void ValidateOwnerId(Guid ownerId)
+    {
+        if (ownerId == Guid.Empty)
+            throw new DomainException("OwnerId é obrigatório.");
     }
 
     private static void ValidateFieldCode(string code)

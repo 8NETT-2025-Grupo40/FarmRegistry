@@ -36,7 +36,7 @@ public class FarmsController : BaseController
     {
         try
         {
-            var response = await _farmService.CreateFarmAsync(request);
+            var response = await _farmService.CreateFarmAsync(_userContext.OwnerId, request);
             LogUserInfo("CreateFarms", _userContext);
 
             return CreatedAtAction(nameof(GetFarmById), new { id = response.Id }, response);
@@ -75,7 +75,7 @@ public class FarmsController : BaseController
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetFarmById(Guid id)
     {
-        var response = await _farmService.GetFarmByIdAsync(id);
+        var response = await _farmService.GetFarmByIdAsync(_userContext.OwnerId, id);
         if (response == null)
         {
             LogUserInfo("GetFarmByIdNotFound", _userContext);
@@ -115,7 +115,7 @@ public class FarmsController : BaseController
 
         try
         {
-            var response = await _farmService.UpdateFarmAsync(request);
+            var response = await _farmService.UpdateFarmAsync(_userContext.OwnerId, request);
             LogUserInfo("UpdateFarm", _userContext);
             return Ok(response);
         }
@@ -143,7 +143,7 @@ public class FarmsController : BaseController
     {
         try
         {
-            var response = await _farmService.ActivateFarmAsync(id);
+            var response = await _farmService.ActivateFarmAsync(_userContext.OwnerId, id);
             LogUserInfo("ActivateFarm", _userContext);
             return Ok(response);
         }
@@ -171,7 +171,7 @@ public class FarmsController : BaseController
     {
         try
         {
-            var response = await _farmService.DeactivateFarmAsync(id);
+            var response = await _farmService.DeactivateFarmAsync(_userContext.OwnerId, id);
             LogUserInfo("DeactivateFarm", _userContext);
             return Ok(response);
         }
@@ -199,7 +199,7 @@ public class FarmsController : BaseController
     {
         try
         {
-            await _farmService.DeleteFarmAsync(id);
+            await _farmService.DeleteFarmAsync(_userContext.OwnerId, id);
             LogUserInfo("DeleteFarm", _userContext);
             return NoContent();
         }

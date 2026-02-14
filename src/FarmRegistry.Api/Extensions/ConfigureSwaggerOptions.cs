@@ -1,17 +1,28 @@
+using FarmRegistry.Application.Common;
+using FarmRegistry.Application.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Asp.Versioning.ApiExplorer;
+using System.Reflection;
 
 namespace FarmRegistry.Api.Extensions;
 
 public class ConfigureSwaggerOptions : IConfigureNamedOptions<SwaggerGenOptions>
 {
     private readonly IApiVersionDescriptionProvider _provider;
+    private readonly AuthenticationMode _authenticationMode;
 
-    public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
+    public ConfigureSwaggerOptions(
+        IApiVersionDescriptionProvider provider,
+        IOptions<AuthenticationOptions> authenticationOptions)
     {
         _provider = provider;
+
+        var authMode = authenticationOptions.Value.AuthMode;
+        _authenticationMode = Enum.TryParse<AuthenticationMode>(authMode, ignoreCase: true, out var mode)
+            ? mode
+            : AuthenticationMode.Mock;
     }
 
     public void Configure(SwaggerGenOptions options)
@@ -21,13 +32,49 @@ public class ConfigureSwaggerOptions : IConfigureNamedOptions<SwaggerGenOptions>
             options.SwaggerDoc(description.GroupName, CreateVersionInfo(description));
         }
 
-        // Adicionar suporte para header X-Mock-User-Id
-        options.AddSecurityDefinition("MockAuth", new OpenApiSecurityScheme
+        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
         {
-            Type = SecuritySchemeType.ApiKey,
+            options.IncludeXmlComments(xmlPath);
+        }
+
+        if (_authenticationMode == AuthenticationMode.Mock)
+        {
+            options.AddSecurityDefinition("MockAuth", new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Header,
+                Name = "X-Mock-User-Id",
+                Description = "Mock User ID for authentication (GUID format). Leave empty to use default user."
+            });
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "MockAuth"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+
+            return;
+        }
+
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
             In = ParameterLocation.Header,
-            Name = "X-Mock-User-Id",
-            Description = "Mock User ID for authentication (GUID format). Leave empty to use default user."
+            Name = "Authorization",
+            Description = "JWT access token do Cognito."
         });
 
         options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -38,10 +85,10 @@ public class ConfigureSwaggerOptions : IConfigureNamedOptions<SwaggerGenOptions>
                     Reference = new OpenApiReference
                     {
                         Type = ReferenceType.SecurityScheme,
-                        Id = "MockAuth"
+                        Id = "Bearer"
                     }
                 },
-                new string[] { }
+                Array.Empty<string>()
             }
         });
     }
@@ -54,7 +101,7 @@ public class ConfigureSwaggerOptions : IConfigureNamedOptions<SwaggerGenOptions>
         {
             Title = "FarmRegistry API",
             Version = desc.ApiVersion.ToString(),
-            Description = "API para gerenciamento de fazendas e talhıes.",
+            Description = "API para gerenciamento de fazendas e talh√µes.",
             Contact = new OpenApiContact
             {
                 Name = "FarmRegistry Team",
@@ -64,7 +111,7 @@ public class ConfigureSwaggerOptions : IConfigureNamedOptions<SwaggerGenOptions>
 
         if (desc.IsDeprecated)
         {
-            info.Description += " Esta vers„o da API foi descontinuada.";
+            info.Description += " Esta vers√£o da API foi descontinuada.";
         }
 
         return info;

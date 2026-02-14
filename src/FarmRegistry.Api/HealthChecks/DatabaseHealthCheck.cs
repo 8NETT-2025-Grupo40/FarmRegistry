@@ -19,10 +19,15 @@ public class DatabaseHealthCheck : IHealthCheck
     {
         try
         {
-            // Verifica se o banco est· acessÌvel
+            if (!_dbContext.Database.IsRelational())
+            {
+                return HealthCheckResult.Healthy("Database is healthy");
+            }
+
+            // Verifica se o banco est√° acess√≠vel
             await _dbContext.Database.CanConnectAsync(cancellationToken);
 
-            // Verifica se as migrations est„o aplicadas
+            // Verifica se as migrations est√£o aplicadas
             var pendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync(cancellationToken);
             
             if (pendingMigrations.Any())

@@ -10,7 +10,7 @@ public class FieldEntityTypeConfiguration : IEntityTypeConfiguration<Field>
     {
         builder.ToTable("Fields");
 
-        // Configurar chave primária
+        // Configurar chave primÃ¡ria
         builder.HasKey(f => f.FieldId);
         
         builder.Property(f => f.FieldId)
@@ -42,8 +42,8 @@ public class FieldEntityTypeConfiguration : IEntityTypeConfiguration<Field>
         builder.Property(f => f.CreatedAt)
             .IsRequired();
 
-        // **FIX: Remover a configuração de navegação Farm se não for necessária**
-        // Se você quiser navegação bidirecional, configure aqui:
+        // **FIX: Remover a configuraÃ§Ã£o de navegaÃ§Ã£o Farm se nÃ£o for necessÃ¡ria**
+        // Se vocÃª quiser navegaÃ§Ã£o bidirecional, configure aqui:
         // builder.HasOne<Farm>()
         //     .WithMany(f => f.Fields)
         //     .HasForeignKey(f => f.FarmId);
@@ -53,7 +53,7 @@ public class FieldEntityTypeConfiguration : IEntityTypeConfiguration<Field>
         builder.Property<string>("UpdatedBy")
             .HasMaxLength(100);
 
-        // Índices para performance e regras de negócio
+        // Ãndices para performance e regras de negÃ³cio
         builder.HasIndex(f => f.FarmId);
         builder.HasIndex(f => f.Code);
         builder.HasIndex(f => f.Status);

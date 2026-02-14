@@ -36,7 +36,7 @@ public class FieldsController : BaseController
     {
         try
         {
-            var response = await _fieldService.CreateFieldAsync(request);
+            var response = await _fieldService.CreateFieldAsync(_userContext.OwnerId, request);
             LogUserInfo("CreateField", _userContext);
             return CreatedAtAction(nameof(GetFieldById), new { id = response.Id }, response);
         }
@@ -75,7 +75,7 @@ public class FieldsController : BaseController
 
         try
         {
-            var response = await _fieldService.GetFieldsByFarmIdAsync(farmId.Value);
+            var response = await _fieldService.GetFieldsByFarmIdAsync(_userContext.OwnerId, farmId.Value);
             LogUserInfo("GetFields", _userContext);
             return Ok(response);
         }
@@ -101,7 +101,7 @@ public class FieldsController : BaseController
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetFieldById(Guid id)
     {
-        var response = await _fieldService.GetFieldByIdAsync(id);
+        var response = await _fieldService.GetFieldByIdAsync(_userContext.OwnerId, id);
         if (response == null)
         {
             LogUserInfo("GetFieldByIdNotFound", _userContext);
@@ -141,7 +141,7 @@ public class FieldsController : BaseController
 
         try
         {
-            var response = await _fieldService.UpdateFieldAsync(request);
+            var response = await _fieldService.UpdateFieldAsync(_userContext.OwnerId, request);
             LogUserInfo("UpdateField", _userContext);
             return Ok(response);
         }
@@ -169,7 +169,7 @@ public class FieldsController : BaseController
     {
         try
         {
-            var response = await _fieldService.ActivateFieldAsync(id);
+            var response = await _fieldService.ActivateFieldAsync(_userContext.OwnerId, id);
             LogUserInfo("ActivateField", _userContext);
             return Ok(response);
         }
@@ -197,7 +197,7 @@ public class FieldsController : BaseController
     {
         try
         {
-            var response = await _fieldService.DeactivateFieldAsync(id);
+            var response = await _fieldService.DeactivateFieldAsync(_userContext.OwnerId, id);
             LogUserInfo("DeactivateField", _userContext);
             return Ok(response);
         }
@@ -225,7 +225,7 @@ public class FieldsController : BaseController
     {
         try
         {
-            await _fieldService.DeleteFieldAsync(id);
+            await _fieldService.DeleteFieldAsync(_userContext.OwnerId, id);
             LogUserInfo("DeleteField", _userContext);
             return NoContent();
         }

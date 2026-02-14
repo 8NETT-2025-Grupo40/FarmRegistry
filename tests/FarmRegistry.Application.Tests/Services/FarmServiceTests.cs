@@ -26,8 +26,9 @@ public sealed class FarmServiceTests
     public async Task CreateFarmAsync_WithValidRequest_ShouldReturnFarmResponse()
     {
         // Arrange
+        var ownerId = Guid.NewGuid();
         var request = new CreateFarmRequest("Fazenda Teste", "Campinas", "SP");
-        var farm = new Farm("Fazenda Teste", "Campinas", "SP");
+        var farm = new Farm(ownerId, "Fazenda Teste", "Campinas", "SP");
         var response = new FarmResponse(farm.FarmId, "Fazenda Teste", "Campinas", "SP", true, farm.CreatedAt);
 
         _farmRepository.CreateAsync(Arg.Any<Farm>(), default)
@@ -37,25 +38,29 @@ public sealed class FarmServiceTests
             .Returns(response);
 
         // Act
-        var result = await _farmService.CreateFarmAsync(request);
+        var result = await _farmService.CreateFarmAsync(ownerId, request);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal("Fazenda Teste", result.Name);
         Assert.Equal("Campinas", result.City);
         Assert.Equal("SP", result.State);
+        await _farmRepository.Received(1).CreateAsync(
+            Arg.Is<Farm>(f => f.OwnerId == ownerId),
+            default);
     }
 
     [Fact]
     public async Task UpdateFarmAsync_WithValidRequest_ShouldReturnUpdatedFarmResponse()
     {
         // Arrange
+        var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
         var request = new UpdateFarmRequest(farmId, "Fazenda Atualizada", "Sorocaba", "SP");
-        var existingFarm = new Farm("Fazenda Original", "Campinas", "SP");
+        var existingFarm = new Farm(ownerId, "Fazenda Original", "Campinas", "SP");
         var response = new FarmResponse(farmId, "Fazenda Atualizada", "Sorocaba", "SP", true, existingFarm.CreatedAt);
 
-        _farmRepository.GetByIdAsync(farmId, default)
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
             .Returns(existingFarm);
         
         _farmRepository.UpdateAsync(existingFarm, default)
@@ -65,7 +70,7 @@ public sealed class FarmServiceTests
             .Returns(response);
 
         // Act
-        var result = await _farmService.UpdateFarmAsync(request);
+        var result = await _farmService.UpdateFarmAsync(ownerId, request);
 
         // Assert
         Assert.NotNull(result);
@@ -77,15 +82,16 @@ public sealed class FarmServiceTests
     public async Task UpdateFarmAsync_WithNonExistentFarm_ShouldThrowDomainException()
     {
         // Arrange
+        var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
         var request = new UpdateFarmRequest(farmId, "Fazenda Teste", "Campinas", "SP");
 
-        _farmRepository.GetByIdAsync(farmId, default)
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
             .Returns((Farm?)null);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<DomainException>(
-            () => _farmService.UpdateFarmAsync(request));
+            () => _farmService.UpdateFarmAsync(ownerId, request));
         
         Assert.Contains("Fazenda com ID", ex.Message);
     }
@@ -97,8 +103,8 @@ public sealed class FarmServiceTests
         var ownerId = Guid.NewGuid();
         var farms = new[]
         {
-            new Farm("Fazenda 1", "Campinas", "SP"),
-            new Farm("Fazenda 2", "Sorocaba", "SP")
+            new Farm(ownerId, "Fazenda 1", "Campinas", "SP"),
+            new Farm(ownerId, "Fazenda 2", "Sorocaba", "SP")
         };
         var responses = farms.Select(f => new FarmResponse(f.FarmId, f.Name, f.City, f.State, true, f.CreatedAt));
 
@@ -120,13 +126,14 @@ public sealed class FarmServiceTests
     public async Task ActivateFarmAsync_WithExistingFarm_ShouldActivateFarm()
     {
         // Arrange
+        var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
-        var farm = new Farm("Fazenda Teste", "Campinas", "SP");
+        var farm = new Farm(ownerId, "Fazenda Teste", "Campinas", "SP");
         var response = new FarmResponse(farmId, "Fazenda Teste", "Campinas", "SP", true, farm.CreatedAt);
         
         farm.Deactivate(); // Primeiro desativa
 
-        _farmRepository.GetByIdAsync(farmId, default)
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
             .Returns(farm);
         
         _farmRepository.UpdateAsync(farm, default)
@@ -136,7 +143,7 @@ public sealed class FarmServiceTests
             .Returns(response);
 
         // Act
-        var result = await _farmService.ActivateFarmAsync(farmId);
+        var result = await _farmService.ActivateFarmAsync(ownerId, farmId);
 
         // Assert
         Assert.True(farm.IsActive);
@@ -148,15 +155,16 @@ public sealed class FarmServiceTests
     public async Task DeleteFarmAsync_WithExistingFarm_ShouldCallDeleteAsync()
     {
         // Arrange
+        var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
 
-        _farmRepository.ExistsAsync(farmId, default)
+        _farmRepository.ExistsAsync(ownerId, farmId, default)
             .Returns(true);
 
         // Act
-        await _farmService.DeleteFarmAsync(farmId);
+        await _farmService.DeleteFarmAsync(ownerId, farmId);
 
         // Assert
-        await _farmRepository.Received(1).DeleteAsync(farmId, default);
+        await _farmRepository.Received(1).DeleteAsync(ownerId, farmId, default);
     }
 }

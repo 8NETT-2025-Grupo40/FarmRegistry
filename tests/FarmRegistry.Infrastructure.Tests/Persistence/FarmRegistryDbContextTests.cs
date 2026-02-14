@@ -6,6 +6,8 @@ namespace FarmRegistry.Infrastructure.Tests.Persistence;
 
 public class FarmRegistryDbContextTests
 {
+    private static readonly Guid OwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     private static DbContextOptions<FarmRegistryDbContext> GetInMemoryDbOptions()
     {
         return new DbContextOptionsBuilder<FarmRegistryDbContext>()
@@ -44,7 +46,7 @@ public class FarmRegistryDbContextTests
         using var context = new FarmRegistryDbContext(options);
         context.Database.EnsureCreated();
 
-        var farm = new Farm("Fazenda Teste", "Ribeirão Preto", "SP");
+        var farm = new Farm(OwnerId, "Fazenda Teste", "RibeirÃ£o Preto", "SP");
         context.Farms.Add(farm);
         
         var result = context.SaveChanges();
@@ -61,8 +63,8 @@ public class FarmRegistryDbContextTests
         using var context = new FarmRegistryDbContext(options);
         context.Database.EnsureCreated();
 
-        var farm = new Farm("Fazenda Teste", "Ribeirão Preto", "SP");
-        var field = farm.AddField("T01", "Talhão 01", 10.5);
+        var farm = new Farm(OwnerId, "Fazenda Teste", "RibeirÃ£o Preto", "SP");
+        var field = farm.AddField("T01", "TalhÃ£o 01", 10.5);
         
         context.Farms.Add(farm);
         
@@ -75,7 +77,7 @@ public class FarmRegistryDbContextTests
         var savedField = context.Fields.First();
         Assert.Equal(farm.FarmId, savedField.FarmId);
         Assert.Equal("T01", savedField.Code);
-        Assert.Equal("Talhão 01", savedField.Name);
+        Assert.Equal("TalhÃ£o 01", savedField.Name);
         Assert.Equal(10.5, savedField.AreaHectares);
     }
 
@@ -87,12 +89,12 @@ public class FarmRegistryDbContextTests
         using var context = new FarmRegistryDbContext(options);
         context.Database.EnsureCreated();
 
-        var farm = new Farm("Fazenda Teste", "Ribeirão Preto", "SP");
+        var farm = new Farm(OwnerId, "Fazenda Teste", "RibeirÃ£o Preto", "SP");
         context.Farms.Add(farm);
         context.SaveChanges();
 
-        // Simular atualização
-        farm.Update("Fazenda Atualizada", "São Paulo", "SP");
+        // Simular atualizaÃ§Ã£o
+        farm.Update("Fazenda Atualizada", "SÃ£o Paulo", "SP");
         context.Entry(farm).State = EntityState.Modified;
         
         context.SaveChanges();
@@ -110,10 +112,10 @@ public class FarmRegistryDbContextTests
         using var context = new FarmRegistryDbContext(options);
         context.Database.EnsureCreated();
 
-        // Arrange: Criar farm com múltiplos fields
-        var farm = new Farm("Fazenda com Talhões", "Ribeirão Preto", "SP");
-        farm.AddField("T01", "Talhão 01", 10.5);
-        farm.AddField("T02", "Talhão 02", 15.7);
+        // Arrange: Criar farm com mÃºltiplos fields
+        var farm = new Farm(OwnerId, "Fazenda com TalhÃµes", "RibeirÃ£o Preto", "SP");
+        farm.AddField("T01", "TalhÃ£o 01", 10.5);
+        farm.AddField("T02", "TalhÃ£o 02", 15.7);
         
         context.Farms.Add(farm);
         context.SaveChanges();
@@ -125,7 +127,7 @@ public class FarmRegistryDbContextTests
             .First(f => f.FarmId == farm.FarmId);
 
         // Assert
-        Assert.Equal("Fazenda com Talhões", loadedFarm.Name);
+        Assert.Equal("Fazenda com TalhÃµes", loadedFarm.Name);
         Assert.Equal(2, loadedFarm.Fields.Count);
         Assert.Contains(loadedFarm.Fields, f => f.Code == "T01");
         Assert.Contains(loadedFarm.Fields, f => f.Code == "T02");
@@ -140,18 +142,18 @@ public class FarmRegistryDbContextTests
         context.Database.EnsureCreated();
 
         // Criar duas fazendas com fields
-        var farm1 = new Farm("Fazenda A", "Ribeirão Preto", "SP");
-        farm1.AddField("T01", "Talhão A1", 10.0);
-        farm1.AddField("T02", "Talhão A2", 15.0);
+        var farm1 = new Farm(OwnerId, "Fazenda A", "RibeirÃ£o Preto", "SP");
+        farm1.AddField("T01", "TalhÃ£o A1", 10.0);
+        farm1.AddField("T02", "TalhÃ£o A2", 15.0);
 
-        var farm2 = new Farm("Fazenda B", "Campinas", "SP");
-        farm2.AddField("T01", "Talhão B1", 20.0); // Mesmo código, mas farm diferente
-        farm2.AddField("T03", "Talhão B3", 25.0);
+        var farm2 = new Farm(Guid.NewGuid(), "Fazenda B", "Campinas", "SP");
+        farm2.AddField("T01", "TalhÃ£o B1", 20.0); // Mesmo cÃ³digo, mas farm diferente
+        farm2.AddField("T03", "TalhÃ£o B3", 25.0);
 
         context.Farms.AddRange(farm1, farm2);
         context.SaveChanges();
 
-        // Verificar que cada farm tem seus próprios fields
+        // Verificar que cada farm tem seus prÃ³prios fields
         var farm1Fields = context.Fields.Where(f => f.FarmId == farm1.FarmId).ToList();
         var farm2Fields = context.Fields.Where(f => f.FarmId == farm2.FarmId).ToList();
 
@@ -159,7 +161,7 @@ public class FarmRegistryDbContextTests
         Assert.Equal(2, farm2Fields.Count);
         Assert.Equal(4, context.Fields.Count()); // Total de 4 fields
 
-        // Verificar que ambas as farms podem ter field com código "T01"
+        // Verificar que ambas as farms podem ter field com cÃ³digo "T01"
         Assert.Contains(farm1Fields, f => f.Code == "T01");
         Assert.Contains(farm2Fields, f => f.Code == "T01");
     }
@@ -172,8 +174,8 @@ public class FarmRegistryDbContextTests
         using var context = new FarmRegistryDbContext(options);
         context.Database.EnsureCreated();
 
-        var farm = new Farm("Fazenda Teste", "Ribeirão Preto", "SP");
-        var field = farm.AddField("T01", "Talhão 01", 10.5);
+        var farm = new Farm(OwnerId, "Fazenda Teste", "RibeirÃ£o Preto", "SP");
+        var field = farm.AddField("T01", "TalhÃ£o 01", 10.5);
         
         context.Farms.Add(farm);
         context.SaveChanges();
@@ -186,7 +188,7 @@ public class FarmRegistryDbContextTests
         context.Entry(savedField).State = EntityState.Modified;
         context.SaveChanges();
 
-        // Verificar mudança persistiu
+        // Verificar mudanÃ§a persistiu
         context.ChangeTracker.Clear();
         var reloadedField = context.Fields.First(f => f.FieldId == savedFieldId);
         

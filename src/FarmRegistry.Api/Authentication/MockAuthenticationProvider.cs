@@ -28,7 +28,7 @@ public sealed class MockAuthenticationProvider : IUserContext
                 }
             }
 
-            // Fallback para um usu·rio padr„o se o header n„o estiver presente ou for inv·lido
+            // Fallback para um usu√°rio padr√£o se o header n√£o estiver presente ou for inv√°lido
             return Guid.Parse("11111111-1111-1111-1111-111111111111");
         }
     }

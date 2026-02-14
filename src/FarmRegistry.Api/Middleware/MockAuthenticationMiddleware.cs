@@ -31,7 +31,7 @@ public sealed class MockAuthenticationMiddleware
                 return;
             }
 
-            // Criar identity e claims para o usu·rio mock
+            // Criar identity e claims para o usu√°rio mock
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
@@ -44,7 +44,7 @@ public sealed class MockAuthenticationMiddleware
         }
         else
         {
-            // Se n„o h· header, criar usu·rio padr„o
+            // Se n√£o houver header, criar usu√°rio padr√£o
             var defaultUserId = "11111111-1111-1111-1111-111111111111";
             var claims = new[]
             {
