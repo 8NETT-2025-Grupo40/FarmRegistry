@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using FarmRegistry.Api.Extensions;
+using FarmRegistry.Api.HealthChecks;
 using FarmRegistry.Api.Middleware;
 using FarmRegistry.Application.Configuration;
 using FarmRegistry.Application.Extensions;
@@ -8,7 +9,6 @@ using FarmRegistry.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,10 +40,6 @@ builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 // Add layer services
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
-
-// Verificar connection string usada.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine($"[STARTUP] Connection String: {connectionString}");
 
 builder.Services.AddApiServices(builder.Configuration);
 
@@ -98,30 +94,6 @@ else
 
 app.UseAuthorization();
 
-static Task WriteHealthResponse(HttpContext context, HealthReport report)
-{
-    context.Response.ContentType = "application/json";
-
-    var response = new
-    {
-        status = report.Status.ToString(),
-        checks = report.Entries.Select(entry => new
-        {
-            name = entry.Key,
-            status = entry.Value.Status.ToString(),
-            description = entry.Value.Description,
-            duration = entry.Value.Duration.TotalMilliseconds
-        }),
-        totalDuration = report.TotalDuration.TotalMilliseconds
-    };
-
-    return context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    }));
-}
-
 app.MapHealthChecks("/registry/health", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("live"),
@@ -131,7 +103,7 @@ app.MapHealthChecks("/registry/health", new HealthCheckOptions
         [HealthStatus.Degraded] = StatusCodes.Status200OK,
         [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
     },
-    ResponseWriter = WriteHealthResponse
+    ResponseWriter = HealthCheckResponseWriter.WriteAsync
 }).AllowAnonymous();
 
 app.MapHealthChecks("/registry/ready", new HealthCheckOptions
@@ -143,9 +115,11 @@ app.MapHealthChecks("/registry/ready", new HealthCheckOptions
         [HealthStatus.Degraded] = StatusCodes.Status503ServiceUnavailable,
         [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
     },
-    ResponseWriter = WriteHealthResponse
+    ResponseWriter = HealthCheckResponseWriter.WriteAsync
 }).AllowAnonymous();
 
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

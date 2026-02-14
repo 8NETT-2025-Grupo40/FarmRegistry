@@ -1,49 +1,52 @@
 using FarmRegistry.Application.Contracts.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace FarmRegistry.Api.Controllers;
 
 public abstract class BaseController : ControllerBase
 {
+    private ILogger Logger => HttpContext.RequestServices
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger(GetType());
+
     protected void LogUserInfo(string action, IUserContext userContext, object? additionalData = null)
     {
-        Console.WriteLine($"[{GetType().Name}.{action}] User Info:");
-        Console.WriteLine($"  OwnerId: {userContext.OwnerId}");
-        Console.WriteLine($"  UserName: {userContext.UserName ?? "NULL"}");
-        Console.WriteLine($"  IsAuthenticated: {userContext.IsAuthenticated}");
-        
+        Logger.LogInformation(
+            "{Controller}.{Action} - Authenticated: {IsAuthenticated} - OwnerId: {OwnerId}",
+            GetType().Name,
+            action,
+            userContext.IsAuthenticated,
+            userContext.OwnerId);
+
         if (additionalData != null)
         {
-            Console.WriteLine($"  Additional Data: {additionalData}");
+            Logger.LogDebug(
+                "{Controller}.{Action} - AdditionalData: {@AdditionalData}",
+                GetType().Name,
+                action,
+                additionalData);
         }
-        
-        Console.WriteLine($"  Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        Console.WriteLine(new string('-', 50));
     }
-    
+
     protected void LogHttpContextUser(string action, object? additionalData = null)
     {
-        Console.WriteLine($"[{GetType().Name}.{action}] HttpContext User Info:");
-        Console.WriteLine($"  User.Identity.Name: {HttpContext.User?.Identity?.Name ?? "NULL"}");
-        Console.WriteLine($"  User.Identity.IsAuthenticated: {HttpContext.User?.Identity?.IsAuthenticated}");
-        Console.WriteLine($"  User.Identity.AuthenticationType: {HttpContext.User?.Identity?.AuthenticationType ?? "NULL"}");
-        
+        Logger.LogDebug(
+            "{Controller}.{Action} - HttpContext Identity: Name={Name}, IsAuthenticated={IsAuthenticated}, Type={AuthenticationType}",
+            GetType().Name,
+            action,
+            HttpContext.User?.Identity?.Name,
+            HttpContext.User?.Identity?.IsAuthenticated,
+            HttpContext.User?.Identity?.AuthenticationType);
+
         if (additionalData != null)
         {
-            Console.WriteLine($"  Additional Data: {additionalData}");
+            Logger.LogDebug(
+                "{Controller}.{Action} - AdditionalData: {@AdditionalData}",
+                GetType().Name,
+                action,
+                additionalData);
         }
-        
-        // Exibir claims
-        if (HttpContext.User?.Claims?.Any() == true)
-        {
-            Console.WriteLine("  Claims:");
-            foreach (var claim in HttpContext.User.Claims)
-            {
-                Console.WriteLine($"    {claim.Type}: {claim.Value}");
-            }
-        }
-        
-        Console.WriteLine($"  Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        Console.WriteLine(new string('-', 50));
     }
 }

@@ -17,13 +17,8 @@ public sealed class CognitoAuthenticationProvider : IUserContext
     {
         get
         {
-            Console.WriteLine("=== CognitoAuthenticationProvider.OwnerId ===");
             var context = _httpContextAccessor.HttpContext;
             var user = context?.User;
-
-            Console.WriteLine($"User exists: {user != null}");
-            Console.WriteLine($"Identity exists: {user?.Identity != null}");
-            Console.WriteLine($"IsAuthenticated: {user?.Identity?.IsAuthenticated}");
 
             if (user?.Identity?.IsAuthenticated == true)
             {

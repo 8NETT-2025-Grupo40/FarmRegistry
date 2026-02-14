@@ -19,6 +19,11 @@ public class DatabaseHealthCheck : IHealthCheck
     {
         try
         {
+            if (!_dbContext.Database.IsRelational())
+            {
+                return HealthCheckResult.Healthy("Database is healthy");
+            }
+
             // Verifica se o banco está acessível
             await _dbContext.Database.CanConnectAsync(cancellationToken);
 
