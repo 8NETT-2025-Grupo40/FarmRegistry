@@ -19,10 +19,10 @@ public class DatabaseHealthCheck : IHealthCheck
     {
         try
         {
-            // Verifica se o banco est· acessÌvel
+            // Verifica se o banco est√° acess√≠vel
             await _dbContext.Database.CanConnectAsync(cancellationToken);
 
-            // Verifica se as migrations est„o aplicadas
+            // Verifica se as migrations est√£o aplicadas
             var pendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync(cancellationToken);
             
             if (pendingMigrations.Any())

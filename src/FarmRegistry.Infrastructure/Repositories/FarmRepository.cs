@@ -14,18 +14,18 @@ public sealed class FarmRepository : IFarmRepository
         _context = context;
     }
 
-    public async Task<Farm?> GetByIdAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<Farm?> GetByIdAsync(Guid ownerId, Guid farmId, CancellationToken cancellationToken = default)
     {
         return await _context.Farms
             .Include(f => f.Fields)
-            .FirstOrDefaultAsync(f => f.FarmId == farmId, cancellationToken);
+            .FirstOrDefaultAsync(f => f.FarmId == farmId && f.OwnerId == ownerId, cancellationToken);
     }
 
     public async Task<IEnumerable<Farm>> GetAllAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
-        // TODO: Filtrar por ownerId quando a entidade Farm incluir essa propriedade
         return await _context.Farms
             .Include(f => f.Fields)
+            .Where(f => f.OwnerId == ownerId)
             .Where(f => f.IsActive)
             .ToListAsync(cancellationToken);
     }
@@ -44,9 +44,9 @@ public sealed class FarmRepository : IFarmRepository
         return farm;
     }
 
-    public async Task DeleteAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid ownerId, Guid farmId, CancellationToken cancellationToken = default)
     {
-        var farm = await GetByIdAsync(farmId, cancellationToken);
+        var farm = await GetByIdAsync(ownerId, farmId, cancellationToken);
         if (farm != null)
         {
             _context.Farms.Remove(farm);
@@ -54,8 +54,8 @@ public sealed class FarmRepository : IFarmRepository
         }
     }
 
-    public async Task<bool> ExistsAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(Guid ownerId, Guid farmId, CancellationToken cancellationToken = default)
     {
-        return await _context.Farms.AnyAsync(f => f.FarmId == farmId, cancellationToken);
+        return await _context.Farms.AnyAsync(f => f.FarmId == farmId && f.OwnerId == ownerId, cancellationToken);
     }
 }

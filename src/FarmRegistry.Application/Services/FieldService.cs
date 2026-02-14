@@ -19,17 +19,17 @@ public sealed class FieldService : IFieldService
         _mapper = mapper;
     }
 
-    public async Task<FieldResponse> CreateFieldAsync(CreateFieldRequest request, CancellationToken cancellationToken = default)
+    public async Task<FieldResponse> CreateFieldAsync(Guid ownerId, CreateFieldRequest request, CancellationToken cancellationToken = default)
     {
         // Verificar se a fazenda existe
-        var farmExists = await _farmRepository.ExistsAsync(request.FarmId, cancellationToken);
+        var farmExists = await _farmRepository.ExistsAsync(ownerId, request.FarmId, cancellationToken);
         if (!farmExists)
-            throw new DomainException($"Fazenda com ID {request.FarmId} n„o foi encontrada.");
+            throw new DomainException($"Fazenda com ID {request.FarmId} n√£o foi encontrada.");
 
-        // Verificar se j· existe um talh„o com o mesmo cÛdigo na fazenda
-        var codeExists = await _fieldRepository.CodeExistsInFarmAsync(request.FarmId, request.Code, null, cancellationToken);
+        // Verificar se j√° existe um talh√£o com o mesmo c√≥digo na fazenda
+        var codeExists = await _fieldRepository.CodeExistsInFarmAsync(ownerId, request.FarmId, request.Code, null, cancellationToken);
         if (codeExists)
-            throw new DomainException($"J· existe um talh„o com o cÛdigo '{request.Code}' nesta fazenda.");
+            throw new DomainException($"J√° existe um talh√£o com o c√≥digo '{request.Code}' nesta fazenda.");
 
         var field = new Field(request.FarmId, request.Code, request.Name, (double)request.AreaHectares);
         if (request.Status != FieldStatus.Normal)
@@ -41,37 +41,37 @@ public sealed class FieldService : IFieldService
         return _mapper.Map<FieldResponse>(createdField);
     }
 
-    public async Task<IEnumerable<FieldResponse>> GetFieldsByFarmIdAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<FieldResponse>> GetFieldsByFarmIdAsync(Guid ownerId, Guid farmId, CancellationToken cancellationToken = default)
     {
-        var farmExists = await _farmRepository.ExistsAsync(farmId, cancellationToken);
+        var farmExists = await _farmRepository.ExistsAsync(ownerId, farmId, cancellationToken);
         if (!farmExists)
-            throw new DomainException($"Fazenda com ID {farmId} n„o foi encontrada.");
+            throw new DomainException($"Fazenda com ID {farmId} n√£o foi encontrada.");
 
-        var fields = await _fieldRepository.GetByFarmIdAsync(farmId, cancellationToken);
+        var fields = await _fieldRepository.GetByFarmIdAsync(ownerId, farmId, cancellationToken);
         return _mapper.Map<IEnumerable<FieldResponse>>(fields);
     }
 
-    public async Task<FieldResponse?> GetFieldByIdAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task<FieldResponse?> GetFieldByIdAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var field = await _fieldRepository.GetByIdAsync(fieldId, cancellationToken);
+        var field = await _fieldRepository.GetByIdAsync(ownerId, fieldId, cancellationToken);
         return field == null ? null : _mapper.Map<FieldResponse>(field);
     }
 
-    public async Task<FieldResponse> UpdateFieldAsync(UpdateFieldRequest request, CancellationToken cancellationToken = default)
+    public async Task<FieldResponse> UpdateFieldAsync(Guid ownerId, UpdateFieldRequest request, CancellationToken cancellationToken = default)
     {
-        var field = await _fieldRepository.GetByIdAsync(request.Id, cancellationToken);
+        var field = await _fieldRepository.GetByIdAsync(ownerId, request.Id, cancellationToken);
         if (field == null)
-            throw new DomainException($"Talh„o com ID {request.Id} n„o foi encontrado.");
+            throw new DomainException($"Talh√£o com ID {request.Id} n√£o foi encontrado.");
 
         // Verificar se a fazenda existe
-        var farmExists = await _farmRepository.ExistsAsync(request.FarmId, cancellationToken);
+        var farmExists = await _farmRepository.ExistsAsync(ownerId, request.FarmId, cancellationToken);
         if (!farmExists)
-            throw new DomainException($"Fazenda com ID {request.FarmId} n„o foi encontrada.");
+            throw new DomainException($"Fazenda com ID {request.FarmId} n√£o foi encontrada.");
 
-        // Verificar se j· existe outro talh„o com o mesmo cÛdigo na fazenda
-        var codeExists = await _fieldRepository.CodeExistsInFarmAsync(request.FarmId, request.Code, request.Id, cancellationToken);
+        // Verificar se j√° existe outro talh√£o com o mesmo c√≥digo na fazenda
+        var codeExists = await _fieldRepository.CodeExistsInFarmAsync(ownerId, request.FarmId, request.Code, request.Id, cancellationToken);
         if (codeExists)
-            throw new DomainException($"J· existe outro talh„o com o cÛdigo '{request.Code}' nesta fazenda.");
+            throw new DomainException($"J√° existe outro talh√£o com o c√≥digo '{request.Code}' nesta fazenda.");
 
         field.Update(request.Code, request.Name, (double)request.AreaHectares);
         field.SetStatus(request.Status);
@@ -80,34 +80,34 @@ public sealed class FieldService : IFieldService
         return _mapper.Map<FieldResponse>(updatedField);
     }
 
-    public async Task<FieldResponse> ActivateFieldAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task<FieldResponse> ActivateFieldAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var field = await _fieldRepository.GetByIdAsync(fieldId, cancellationToken);
+        var field = await _fieldRepository.GetByIdAsync(ownerId, fieldId, cancellationToken);
         if (field == null)
-            throw new DomainException($"Talh„o com ID {fieldId} n„o foi encontrado.");
+            throw new DomainException($"Talh√£o com ID {fieldId} n√£o foi encontrado.");
 
         field.Activate();
         var updatedField = await _fieldRepository.UpdateAsync(field, cancellationToken);
         return _mapper.Map<FieldResponse>(updatedField);
     }
 
-    public async Task<FieldResponse> DeactivateFieldAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task<FieldResponse> DeactivateFieldAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var field = await _fieldRepository.GetByIdAsync(fieldId, cancellationToken);
+        var field = await _fieldRepository.GetByIdAsync(ownerId, fieldId, cancellationToken);
         if (field == null)
-            throw new DomainException($"Talh„o com ID {fieldId} n„o foi encontrado.");
+            throw new DomainException($"Talh√£o com ID {fieldId} n√£o foi encontrado.");
 
         field.Deactivate();
         var updatedField = await _fieldRepository.UpdateAsync(field, cancellationToken);
         return _mapper.Map<FieldResponse>(updatedField);
     }
 
-    public async Task DeleteFieldAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task DeleteFieldAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var fieldExists = await _fieldRepository.ExistsAsync(fieldId, cancellationToken);
+        var fieldExists = await _fieldRepository.ExistsAsync(ownerId, fieldId, cancellationToken);
         if (!fieldExists)
-            throw new DomainException($"Talh„o com ID {fieldId} n„o foi encontrado.");
+            throw new DomainException($"Talh√£o com ID {fieldId} n√£o foi encontrado.");
 
-        await _fieldRepository.DeleteAsync(fieldId, cancellationToken);
+        await _fieldRepository.DeleteAsync(ownerId, fieldId, cancellationToken);
     }
 }

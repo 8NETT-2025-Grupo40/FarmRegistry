@@ -15,7 +15,7 @@ public static class ServiceExtensions
         services.AddDbContext<FarmRegistryDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-        // Registre os repositórios reais
+        // Registre os repositÃ³rios reais
         services.AddScoped<IFarmRepository, FarmRepository>();
         services.AddScoped<IFieldRepository, FieldRepository>();
 

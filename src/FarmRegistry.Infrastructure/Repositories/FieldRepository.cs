@@ -14,15 +14,21 @@ public sealed class FieldRepository : IFieldRepository
         _context = context;
     }
 
-    public async Task<Field?> GetByIdAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    private IQueryable<Field> QueryByOwner(Guid ownerId)
     {
-        return await _context.Fields
+        return _context.Fields.Where(field =>
+            _context.Farms.Any(farm => farm.FarmId == field.FarmId && farm.OwnerId == ownerId));
+    }
+
+    public async Task<Field?> GetByIdAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
+    {
+        return await QueryByOwner(ownerId)
             .FirstOrDefaultAsync(f => f.FieldId == fieldId, cancellationToken);
     }
 
-    public async Task<IEnumerable<Field>> GetByFarmIdAsync(Guid farmId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Field>> GetByFarmIdAsync(Guid ownerId, Guid farmId, CancellationToken cancellationToken = default)
     {
-        return await _context.Fields
+        return await QueryByOwner(ownerId)
             .Where(f => f.FarmId == farmId)
             .ToListAsync(cancellationToken);
     }
@@ -41,9 +47,9 @@ public sealed class FieldRepository : IFieldRepository
         return field;
     }
 
-    public async Task DeleteAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var field = await GetByIdAsync(fieldId, cancellationToken);
+        var field = await GetByIdAsync(ownerId, fieldId, cancellationToken);
         if (field != null)
         {
             _context.Fields.Remove(field);
@@ -51,17 +57,17 @@ public sealed class FieldRepository : IFieldRepository
         }
     }
 
-    public async Task<bool> ExistsAsync(Guid fieldId, CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        return await _context.Fields.AnyAsync(f => f.FieldId == fieldId, cancellationToken);
+        return await QueryByOwner(ownerId).AnyAsync(f => f.FieldId == fieldId, cancellationToken);
     }
 
-    public async Task<bool> CodeExistsInFarmAsync(Guid farmId, string code, Guid? excludeFieldId = null, CancellationToken cancellationToken = default)
+    public async Task<bool> CodeExistsInFarmAsync(Guid ownerId, Guid farmId, string code, Guid? excludeFieldId = null, CancellationToken cancellationToken = default)
     {
-        return await _context.Fields.AnyAsync(f => 
-            f.FarmId == farmId && 
+        return await QueryByOwner(ownerId).AnyAsync(f =>
+            f.FarmId == farmId &&
             f.Code.ToLower() == code.ToLower() &&
-            (excludeFieldId == null || f.FieldId != excludeFieldId), 
+            (excludeFieldId == null || f.FieldId != excludeFieldId),
             cancellationToken);
     }
 }

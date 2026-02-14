@@ -10,12 +10,15 @@ public class FarmEntityTypeConfiguration : IEntityTypeConfiguration<Farm>
     {
         builder.ToTable("Farms");
 
-        // Configurar chave primária
+        // Configurar chave primÃ¡ria
         builder.HasKey(f => f.FarmId);
         
         builder.Property(f => f.FarmId)
             .HasColumnName("Id")
             .ValueGeneratedNever();
+
+        builder.Property(f => f.OwnerId)
+            .IsRequired();
 
         // Configurar propriedades
         builder.Property(f => f.Name)
@@ -49,14 +52,15 @@ public class FarmEntityTypeConfiguration : IEntityTypeConfiguration<Farm>
             .HasForeignKey(field => field.FarmId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // **FIX: Configurar navegação para usar o backing field correto**
+        // **FIX: Configurar navegaÃ§Ã£o para usar o backing field correto**
         builder.Navigation(f => f.Fields)
             .HasField("_fields")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Índices para performance
+        // Ãndices para performance
         builder.HasIndex(f => f.Name);
         builder.HasIndex(f => f.IsActive);
+        builder.HasIndex(f => f.OwnerId);
         builder.HasIndex(f => new { f.City, f.State });
     }
 }

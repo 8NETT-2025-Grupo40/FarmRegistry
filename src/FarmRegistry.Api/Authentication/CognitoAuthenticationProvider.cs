@@ -27,18 +27,18 @@ public sealed class CognitoAuthenticationProvider : IUserContext
 
             if (user?.Identity?.IsAuthenticated == true)
             {
-                // Primeiro tenta o claim 'sub' (padr„o JWT)
+                // Primeiro tenta o claim 'sub' (padr√£o JWT)
                 var subClaim = user.FindFirst(ClaimTypes.NameIdentifier) ?? user.FindFirst("sub");
                 if (subClaim != null && Guid.TryParse(subClaim.Value, out var subGuid))
                 {
                     return subGuid;
                 }
 
-                // Fallback para email se 'sub' n„o for um GUID v·lido
+                // Fallback para email se 'sub' n√£o for um GUID v√°lido
                 var emailClaim = user.FindFirst(ClaimTypes.Email) ?? user.FindFirst("email");
                 if (emailClaim != null)
                 {
-                    // Gerar um GUID determinÌstico baseado no email
+                    // Gerar um GUID determin√≠stico baseado no email
                     var emailBytes = System.Text.Encoding.UTF8.GetBytes(emailClaim.Value);
                     var hash = System.Security.Cryptography.SHA256.HashData(emailBytes);
                     var guidBytes = new byte[16];
@@ -47,7 +47,7 @@ public sealed class CognitoAuthenticationProvider : IUserContext
                 }
             }
 
-            // Fallback para usu·rio anÙnimo
+            // Fallback para usu√°rio an√¥nimo
             return Guid.Empty;
         }
     }

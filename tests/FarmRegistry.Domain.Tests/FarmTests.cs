@@ -5,12 +5,15 @@ namespace FarmRegistry.Domain.Tests;
 
 public class FarmTests
 {
+    private static readonly Guid OwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
     [Fact]
     public void Create_Farm_ShouldStartActive_AndHaveValidData()
     {
-        var farm = new Farm("Fazenda Boa Vista", "Ribeirão Preto", "SP");
+        var farm = new Farm(OwnerId, "Fazenda Boa Vista", "Ribeirão Preto", "SP");
 
         Assert.NotEqual(Guid.Empty, farm.FarmId);
+        Assert.Equal(OwnerId, farm.OwnerId);
         Assert.True(farm.IsActive);
         Assert.Equal("Fazenda Boa Vista", farm.Name);
         Assert.Equal("Ribeirão Preto", farm.City);
@@ -22,7 +25,7 @@ public class FarmTests
     [Fact]
     public void Update_Farm_ShouldChangeNameCityState()
     {
-        var farm = new Farm("Fazenda A", "Campinas", "SP");
+        var farm = new Farm(OwnerId, "Fazenda A", "Campinas", "SP");
 
         farm.Update("Fazenda B", "Sorocaba", "sp");
 
@@ -34,7 +37,7 @@ public class FarmTests
     [Fact]
     public void ActivateDeactivate_Farm_ShouldToggleIsActive()
     {
-        var farm = new Farm("Fazenda A", "Campinas", "SP");
+        var farm = new Farm(OwnerId, "Fazenda A", "Campinas", "SP");
 
         farm.Deactivate();
         Assert.False(farm.IsActive);
@@ -46,7 +49,7 @@ public class FarmTests
     [Fact]
     public void AddField_ShouldCreateFieldLinkedToFarm()
     {
-        var farm = new Farm("Fazenda A", "Campinas", "SP");
+        var farm = new Farm(OwnerId, "Fazenda A", "Campinas", "SP");
 
         var field = farm.AddField("T01", "Talhão 01", 10);
 
@@ -63,7 +66,7 @@ public class FarmTests
     [Fact]
     public void AddField_ShouldRejectDuplicateFieldCode()
     {
-        var farm = new Farm("Fazenda A", "Campinas", "SP");
+        var farm = new Farm(OwnerId, "Fazenda A", "Campinas", "SP");
         farm.AddField("T01", "Talhão 01", 10);
 
         var ex = Assert.Throws<DomainException>(() =>

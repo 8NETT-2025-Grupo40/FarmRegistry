@@ -26,7 +26,7 @@ public class FarmRegistryDbContext : DbContext
     {
         base.OnConfiguring(optionsBuilder);
         
-        // Configurar para n„o usar constructor binding
+        // Configurar para n√£o usar constructor binding
         optionsBuilder.EnableServiceProviderCaching(false);
     }
 
