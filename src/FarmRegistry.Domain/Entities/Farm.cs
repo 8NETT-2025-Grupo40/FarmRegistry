@@ -52,14 +52,19 @@ public sealed class Farm
 
     public void Deactivate() => IsActive = false;
 
-    public Field AddField(string code, string name, double areaHectares)
+    public Field AddField(
+        string code,
+        string name,
+        double areaHectares,
+        string cropName,
+        IEnumerable<FieldBoundaryCoordinate> boundaryCoordinates)
     {
         ValidateFieldCode(code);
 
         if (_fields.Any(f => string.Equals(f.Code, code.Trim(), StringComparison.OrdinalIgnoreCase)))
             throw new DomainException("Já existe um talhão com esse código nesta propriedade.");
 
-        var field = new Field(FarmId, code, name, areaHectares);
+        var field = new Field(FarmId, code, name, areaHectares, cropName, boundaryCoordinates);
         _fields.Add(field);
         return field;
     }

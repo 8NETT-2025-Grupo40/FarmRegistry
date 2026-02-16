@@ -9,6 +9,8 @@ public sealed record FieldResponse
     public string Code { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public decimal AreaHectares { get; init; }
+    public string CropName { get; init; } = string.Empty;
+    public IReadOnlyCollection<FieldBoundaryPointResponse> BoundaryPoints { get; init; } = Array.Empty<FieldBoundaryPointResponse>();
     public FieldStatus Status { get; init; }
     public DateTime? StatusUpdatedAt { get; init; }
     public DateTime CreatedAt { get; init; }
@@ -21,6 +23,8 @@ public sealed record FieldResponse
         string code,
         string name,
         decimal areaHectares,
+        string cropName,
+        IReadOnlyCollection<FieldBoundaryPointResponse> boundaryPoints,
         FieldStatus status,
         DateTime? statusUpdatedAt,
         DateTime createdAt)
@@ -30,6 +34,8 @@ public sealed record FieldResponse
         Code = code;
         Name = name;
         AreaHectares = areaHectares;
+        CropName = cropName;
+        BoundaryPoints = boundaryPoints;
         Status = status;
         StatusUpdatedAt = statusUpdatedAt;
         CreatedAt = createdAt;

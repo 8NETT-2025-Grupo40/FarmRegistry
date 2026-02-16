@@ -6,6 +6,12 @@ namespace FarmRegistry.Domain.Tests;
 public class FarmTests
 {
     private static readonly Guid OwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly IReadOnlyCollection<FieldBoundaryCoordinate> Boundary =
+    [
+        new FieldBoundaryCoordinate(-21.2021, -47.8021),
+        new FieldBoundaryCoordinate(-21.2018, -47.8015),
+        new FieldBoundaryCoordinate(-21.2025, -47.8011)
+    ];
 
     [Fact]
     public void Create_Farm_ShouldStartActive_AndHaveValidData()
@@ -51,13 +57,15 @@ public class FarmTests
     {
         var farm = new Farm(OwnerId, "Fazenda A", "Campinas", "SP");
 
-        var field = farm.AddField("T01", "Talhão 01", 10);
+        var field = farm.AddField("T01", "Talhão 01", 10, "Milho", Boundary);
 
         Assert.Single(farm.Fields);
         Assert.Equal(farm.FarmId, field.FarmId);
         Assert.Equal("T01", field.Code);
         Assert.Equal("Talhão 01", field.Name);
         Assert.Equal(10, field.AreaHectares);
+        Assert.Equal("Milho", field.CropName);
+        Assert.Equal(3, field.BoundaryPoints.Count);
         Assert.Equal(FieldStatus.Normal, field.Status);
         Assert.True(field.CreatedAt != default);
         Assert.True(field.StatusUpdatedAt != default);
@@ -67,10 +75,10 @@ public class FarmTests
     public void AddField_ShouldRejectDuplicateFieldCode()
     {
         var farm = new Farm(OwnerId, "Fazenda A", "Campinas", "SP");
-        farm.AddField("T01", "Talhão 01", 10);
+        farm.AddField("T01", "Talhão 01", 10, "Milho", Boundary);
 
         var ex = Assert.Throws<DomainException>(() =>
-            farm.AddField("t01", "Talhão 02", 12));
+            farm.AddField("t01", "Talhão 02", 12, "Soja", Boundary));
 
         Assert.Contains("Já existe um talhão com esse código", ex.Message);
     }

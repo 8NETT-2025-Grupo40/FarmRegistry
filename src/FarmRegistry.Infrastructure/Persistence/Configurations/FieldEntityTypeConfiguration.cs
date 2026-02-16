@@ -31,10 +31,15 @@ public class FieldEntityTypeConfiguration : IEntityTypeConfiguration<Field>
         builder.Property(f => f.AreaHectares)
             .IsRequired();
 
+        builder.Property(f => f.CropName)
+            .IsRequired()
+            .HasMaxLength(120);
+
         builder.Property(f => f.Status)
             .IsRequired()
             .HasConversion<int>()
-            .HasDefaultValue(FieldStatus.Normal);
+            .HasDefaultValue(FieldStatus.Normal)
+            .HasSentinel((FieldStatus)0);
 
         builder.Property(f => f.StatusUpdatedAt)
             .IsRequired();
@@ -42,11 +47,13 @@ public class FieldEntityTypeConfiguration : IEntityTypeConfiguration<Field>
         builder.Property(f => f.CreatedAt)
             .IsRequired();
 
-        // **FIX: Remover a configuração de navegação Farm se não for necessária**
-        // Se você quiser navegação bidirecional, configure aqui:
-        // builder.HasOne<Farm>()
-        //     .WithMany(f => f.Fields)
-        //     .HasForeignKey(f => f.FarmId);
+        builder.HasMany(f => f.BoundaryPoints)
+            .WithOne()
+            .HasForeignKey(point => point.FieldId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(f => f.BoundaryPoints)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Shadow Properties para auditoria
         builder.Property<DateTime?>("UpdatedAt");

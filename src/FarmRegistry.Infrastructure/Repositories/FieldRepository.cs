@@ -20,15 +20,21 @@ public sealed class FieldRepository : IFieldRepository
             _context.Farms.Any(farm => farm.FarmId == field.FarmId && farm.OwnerId == ownerId));
     }
 
+    private IQueryable<Field> QueryByOwnerWithBoundaryPoints(Guid ownerId)
+    {
+        return QueryByOwner(ownerId)
+            .Include(field => field.BoundaryPoints);
+    }
+
     public async Task<Field?> GetByIdAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        return await QueryByOwner(ownerId)
+        return await QueryByOwnerWithBoundaryPoints(ownerId)
             .FirstOrDefaultAsync(f => f.FieldId == fieldId, cancellationToken);
     }
 
     public async Task<IEnumerable<Field>> GetByFarmIdAsync(Guid ownerId, Guid farmId, CancellationToken cancellationToken = default)
     {
-        return await QueryByOwner(ownerId)
+        return await QueryByOwnerWithBoundaryPoints(ownerId)
             .Where(f => f.FarmId == farmId)
             .ToListAsync(cancellationToken);
     }

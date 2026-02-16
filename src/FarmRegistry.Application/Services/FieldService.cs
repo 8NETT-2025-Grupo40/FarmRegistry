@@ -31,7 +31,15 @@ public sealed class FieldService : IFieldService
         if (codeExists)
             throw new DomainException($"Já existe um talhão com o código '{request.Code}' nesta fazenda.");
 
-        var field = new Field(request.FarmId, request.Code, request.Name, (double)request.AreaHectares);
+        var boundaryCoordinates = MapBoundaryCoordinates(request.BoundaryPoints);
+        var field = new Field(
+            request.FarmId,
+            request.Code,
+            request.Name,
+            (double)request.AreaHectares,
+            request.CropName,
+            boundaryCoordinates);
+
         if (request.Status != FieldStatus.Normal)
         {
             field.SetStatus(request.Status);
@@ -63,17 +71,22 @@ public sealed class FieldService : IFieldService
         if (field == null)
             throw new DomainException($"Talhão com ID {request.Id} não foi encontrado.");
 
-        // Verificar se a fazenda existe
-        var farmExists = await _farmRepository.ExistsAsync(ownerId, request.FarmId, cancellationToken);
-        if (!farmExists)
-            throw new DomainException($"Fazenda com ID {request.FarmId} não foi encontrada.");
+        if (field.FarmId != request.FarmId)
+            throw new DomainException("Não é permitido alterar a propriedade vinculada ao talhão.");
 
         // Verificar se já existe outro talhão com o mesmo código na fazenda
         var codeExists = await _fieldRepository.CodeExistsInFarmAsync(ownerId, request.FarmId, request.Code, request.Id, cancellationToken);
         if (codeExists)
             throw new DomainException($"Já existe outro talhão com o código '{request.Code}' nesta fazenda.");
 
-        field.Update(request.Code, request.Name, (double)request.AreaHectares);
+        var boundaryCoordinates = MapBoundaryCoordinates(request.BoundaryPoints);
+        field.Update(
+            request.Code,
+            request.Name,
+            (double)request.AreaHectares,
+            request.CropName,
+            boundaryCoordinates);
+
         field.SetStatus(request.Status);
 
         var updatedField = await _fieldRepository.UpdateAsync(field, cancellationToken);
@@ -109,5 +122,16 @@ public sealed class FieldService : IFieldService
             throw new DomainException($"Talhão com ID {fieldId} não foi encontrado.");
 
         await _fieldRepository.DeleteAsync(ownerId, fieldId, cancellationToken);
+    }
+
+    private static IReadOnlyCollection<FieldBoundaryCoordinate> MapBoundaryCoordinates(
+        IReadOnlyCollection<FieldBoundaryPointRequest>? boundaryPoints)
+    {
+        if (boundaryPoints is null)
+            throw new DomainException("A delimitação do talhão é obrigatória.");
+
+        return boundaryPoints
+            .Select(point => new FieldBoundaryCoordinate(point.Latitude, point.Longitude))
+            .ToList();
     }
 }

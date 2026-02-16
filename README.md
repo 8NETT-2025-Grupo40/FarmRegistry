@@ -57,9 +57,29 @@ De acordo com os requisitos do Hackathon 8NETT, o MVP deste microserviço contem
 
 ### 🌾 Talhão
 - Cadastro de talhões vinculados a uma propriedade
+- Delimitação geográfica do talhão por pontos (latitude/longitude)
+- Registro da cultura plantada em cada talhão
 - Consulta de talhões por propriedade
 - Atualização de dados do talhão
 - Exclusão de talhões
+
+#### Exemplo de payload para criação de talhão
+
+```json
+{
+  "farmId": "8f3f4c84-6f45-4c89-8d8f-c1f57e0ca8d2",
+  "code": "TALHAO-01",
+  "name": "Talhão Norte",
+  "areaHectares": 12.5,
+  "cropName": "Milho",
+  "boundaryPoints": [
+    { "latitude": -21.2211, "longitude": -47.8301 },
+    { "latitude": -21.2208, "longitude": -47.8296 },
+    { "latitude": -21.2215, "longitude": -47.8291 }
+  ],
+  "status": 1
+}
+```
 
 *Este serviço não é responsável por informações operacionais, leituras de sensores ou dados produtivos.*
 

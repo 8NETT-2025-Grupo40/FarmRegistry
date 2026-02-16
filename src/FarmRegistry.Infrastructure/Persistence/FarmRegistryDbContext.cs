@@ -13,6 +13,7 @@ public class FarmRegistryDbContext : DbContext
 
     public DbSet<Farm> Farms { get; set; } = null!;
     public DbSet<Field> Fields { get; set; } = null!;
+    public DbSet<FieldBoundaryPoint> FieldBoundaryPoints { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,6 +21,7 @@ public class FarmRegistryDbContext : DbContext
 
         modelBuilder.ApplyConfiguration(new FarmEntityTypeConfiguration());
         modelBuilder.ApplyConfiguration(new FieldEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new FieldBoundaryPointEntityTypeConfiguration());
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
