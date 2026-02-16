@@ -53,7 +53,7 @@ De acordo com os requisitos do Hackathon 8NETT, o MVP deste microserviço contem
 - Cadastro de propriedades
 - Consulta de propriedades cadastradas
 - Atualização de dados da propriedade
-- Exclusão de propriedades
+- Exclusão física de propriedades
 
 ### 🌾 Talhão
 - Cadastro de talhões vinculados a uma propriedade
@@ -61,7 +61,8 @@ De acordo com os requisitos do Hackathon 8NETT, o MVP deste microserviço contem
 - Registro da cultura plantada em cada talhão
 - Consulta de talhões por propriedade
 - Atualização de dados do talhão
-- Exclusão de talhões
+- Exclusão física de talhões
+- Operações de escrita bloqueadas quando a propriedade está inativa (HTTP 409)
 
 #### Exemplo de payload para criação de talhão
 

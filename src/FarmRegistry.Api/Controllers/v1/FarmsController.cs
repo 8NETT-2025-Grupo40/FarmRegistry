@@ -45,7 +45,7 @@ public class FarmsController : BaseController
         {
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domínio",
+                Title = "Regra de negócio inválida.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -81,7 +81,7 @@ public class FarmsController : BaseController
             LogUserInfo("GetFarmByIdNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda não encontrada",
+                Title = "Recurso não encontrado.",
                 Detail = $"Fazenda com ID {id} não foi encontrada.",
                 Status = StatusCodes.Status404NotFound
             });
@@ -104,10 +104,10 @@ public class FarmsController : BaseController
     {
         if (id != request.Id)
         {
-            LogUserInfo("UpdateFarmNotFound", _userContext);
+            LogUserInfo("UpdateFarmIdMismatch", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "ID inconsistente",
+                Title = "Dados de entrada inválidos.",
                 Detail = "O ID da URL não confere com o ID do corpo da requisição.",
                 Status = StatusCodes.Status400BadRequest
             });
@@ -119,12 +119,22 @@ public class FarmsController : BaseController
             LogUserInfo("UpdateFarm", _userContext);
             return Ok(response);
         }
+        catch (NotFoundException ex)
+        {
+            LogUserInfo("UpdateFarmNotFound", _userContext);
+            return NotFound(new ProblemDetails
+            {
+                Title = "Recurso não encontrado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
         catch (DomainException ex)
         {
             LogUserInfo("UpdateFarmBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domínio",
+                Title = "Regra de negócio inválida.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -138,6 +148,7 @@ public class FarmsController : BaseController
     /// <returns>Fazenda ativada</returns>
     [HttpPatch("{id:guid}/activate")]
     [ProducesResponseType(typeof(FarmResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ActivateFarm(Guid id)
     {
@@ -147,14 +158,24 @@ public class FarmsController : BaseController
             LogUserInfo("ActivateFarm", _userContext);
             return Ok(response);
         }
-        catch (DomainException ex)
+        catch (NotFoundException ex)
         {
             LogUserInfo("ActivateFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda não encontrada",
+                Title = "Recurso não encontrado.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (DomainException ex)
+        {
+            LogUserInfo("ActivateFarmBadRequest", _userContext);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Regra de negócio inválida.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
             });
         }
     }
@@ -166,6 +187,7 @@ public class FarmsController : BaseController
     /// <returns>Fazenda desativada</returns>
     [HttpPatch("{id:guid}/deactivate")]
     [ProducesResponseType(typeof(FarmResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeactivateFarm(Guid id)
     {
@@ -175,25 +197,36 @@ public class FarmsController : BaseController
             LogUserInfo("DeactivateFarm", _userContext);
             return Ok(response);
         }
-        catch (DomainException ex)
+        catch (NotFoundException ex)
         {
             LogUserInfo("DeactivateFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda não encontrada",
+                Title = "Recurso não encontrado.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (DomainException ex)
+        {
+            LogUserInfo("DeactivateFarmBadRequest", _userContext);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Regra de negócio inválida.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
             });
         }
     }
 
     /// <summary>
-    /// Remove uma fazenda (deleção lógica)
+    /// Remove uma fazenda (deleção física)
     /// </summary>
     /// <param name="id">ID da fazenda</param>
     /// <returns>No content</returns>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteFarm(Guid id)
     {
@@ -203,14 +236,24 @@ public class FarmsController : BaseController
             LogUserInfo("DeleteFarm", _userContext);
             return NoContent();
         }
-        catch (DomainException ex)
+        catch (NotFoundException ex)
         {
             LogUserInfo("DeleteFarmNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Fazenda não encontrada",
+                Title = "Recurso não encontrado.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (DomainException ex)
+        {
+            LogUserInfo("DeleteFarmBadRequest", _userContext);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Regra de negócio inválida.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
             });
         }
     }

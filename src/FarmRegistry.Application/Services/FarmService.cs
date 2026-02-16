@@ -40,7 +40,7 @@ public sealed class FarmService : IFarmService
     {
         var farm = await _farmRepository.GetByIdAsync(ownerId, request.Id, cancellationToken);
         if (farm == null)
-            throw new DomainException($"Fazenda com ID {request.Id} não foi encontrada.");
+            throw new NotFoundException($"Fazenda com ID {request.Id} não foi encontrada.");
 
         farm.Update(request.Name, request.City, request.State);
         var updatedFarm = await _farmRepository.UpdateAsync(farm, cancellationToken);
@@ -51,7 +51,7 @@ public sealed class FarmService : IFarmService
     {
         var farm = await _farmRepository.GetByIdAsync(ownerId, farmId, cancellationToken);
         if (farm == null)
-            throw new DomainException($"Fazenda com ID {farmId} não foi encontrada.");
+            throw new NotFoundException($"Fazenda com ID {farmId} não foi encontrada.");
 
         farm.Activate();
         var updatedFarm = await _farmRepository.UpdateAsync(farm, cancellationToken);
@@ -62,7 +62,7 @@ public sealed class FarmService : IFarmService
     {
         var farm = await _farmRepository.GetByIdAsync(ownerId, farmId, cancellationToken);
         if (farm == null)
-            throw new DomainException($"Fazenda com ID {farmId} não foi encontrada.");
+            throw new NotFoundException($"Fazenda com ID {farmId} não foi encontrada.");
 
         farm.Deactivate();
         var updatedFarm = await _farmRepository.UpdateAsync(farm, cancellationToken);
@@ -73,7 +73,7 @@ public sealed class FarmService : IFarmService
     {
         var farmExists = await _farmRepository.ExistsAsync(ownerId, farmId, cancellationToken);
         if (!farmExists)
-            throw new DomainException($"Fazenda com ID {farmId} não foi encontrada.");
+            throw new NotFoundException($"Fazenda com ID {farmId} não foi encontrada.");
 
         await _farmRepository.DeleteAsync(ownerId, farmId, cancellationToken);
     }

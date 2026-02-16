@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FarmRegistry.Api.Tests.Controllers;
 
@@ -30,6 +32,27 @@ public class AuthenticationModeTests : IClassFixture<TestWebApplicationFactory>
         var response = await client.GetAsync("/registry/api/v1/farms");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("Dados de entrada inválidos.");
+        problem.Detail.Should().Contain("GUID");
+    }
+
+    [Fact]
+    public async Task MockMode_GetFarmsWithEmptyHeader_ShouldReturnBadRequestProblemDetails()
+    {
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.TryAddWithoutValidation("X-Mock-User-Id", "   ");
+
+        var response = await client.GetAsync("/registry/api/v1/farms");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem.Should().NotBeNull();
+        problem!.Title.Should().Be("Dados de entrada inválidos.");
+        problem.Detail.Should().Contain("não pode ser vazio");
     }
 
     [Fact]

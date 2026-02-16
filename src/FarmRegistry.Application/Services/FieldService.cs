@@ -21,10 +21,7 @@ public sealed class FieldService : IFieldService
 
     public async Task<FieldResponse> CreateFieldAsync(Guid ownerId, CreateFieldRequest request, CancellationToken cancellationToken = default)
     {
-        // Verificar se a fazenda existe
-        var farmExists = await _farmRepository.ExistsAsync(ownerId, request.FarmId, cancellationToken);
-        if (!farmExists)
-            throw new DomainException($"Fazenda com ID {request.FarmId} não foi encontrada.");
+        await EnsureFarmAllowsFieldMutationsAsync(ownerId, request.FarmId, cancellationToken);
 
         // Verificar se já existe um talhão com o mesmo código na fazenda
         var codeExists = await _fieldRepository.CodeExistsInFarmAsync(ownerId, request.FarmId, request.Code, null, cancellationToken);
@@ -53,7 +50,7 @@ public sealed class FieldService : IFieldService
     {
         var farmExists = await _farmRepository.ExistsAsync(ownerId, farmId, cancellationToken);
         if (!farmExists)
-            throw new DomainException($"Fazenda com ID {farmId} não foi encontrada.");
+            throw new NotFoundException($"Fazenda com ID {farmId} não foi encontrada.");
 
         var fields = await _fieldRepository.GetByFarmIdAsync(ownerId, farmId, cancellationToken);
         return _mapper.Map<IEnumerable<FieldResponse>>(fields);
@@ -69,10 +66,12 @@ public sealed class FieldService : IFieldService
     {
         var field = await _fieldRepository.GetByIdAsync(ownerId, request.Id, cancellationToken);
         if (field == null)
-            throw new DomainException($"Talhão com ID {request.Id} não foi encontrado.");
+            throw new NotFoundException($"Talhão com ID {request.Id} não foi encontrado.");
 
         if (field.FarmId != request.FarmId)
             throw new DomainException("Não é permitido alterar a propriedade vinculada ao talhão.");
+
+        await EnsureFarmAllowsFieldMutationsAsync(ownerId, field.FarmId, cancellationToken);
 
         // Verificar se já existe outro talhão com o mesmo código na fazenda
         var codeExists = await _fieldRepository.CodeExistsInFarmAsync(ownerId, request.FarmId, request.Code, request.Id, cancellationToken);
@@ -97,7 +96,9 @@ public sealed class FieldService : IFieldService
     {
         var field = await _fieldRepository.GetByIdAsync(ownerId, fieldId, cancellationToken);
         if (field == null)
-            throw new DomainException($"Talhão com ID {fieldId} não foi encontrado.");
+            throw new NotFoundException($"Talhão com ID {fieldId} não foi encontrado.");
+
+        await EnsureFarmAllowsFieldMutationsAsync(ownerId, field.FarmId, cancellationToken);
 
         field.Activate();
         var updatedField = await _fieldRepository.UpdateAsync(field, cancellationToken);
@@ -108,7 +109,9 @@ public sealed class FieldService : IFieldService
     {
         var field = await _fieldRepository.GetByIdAsync(ownerId, fieldId, cancellationToken);
         if (field == null)
-            throw new DomainException($"Talhão com ID {fieldId} não foi encontrado.");
+            throw new NotFoundException($"Talhão com ID {fieldId} não foi encontrado.");
+
+        await EnsureFarmAllowsFieldMutationsAsync(ownerId, field.FarmId, cancellationToken);
 
         field.Deactivate();
         var updatedField = await _fieldRepository.UpdateAsync(field, cancellationToken);
@@ -117,11 +120,26 @@ public sealed class FieldService : IFieldService
 
     public async Task DeleteFieldAsync(Guid ownerId, Guid fieldId, CancellationToken cancellationToken = default)
     {
-        var fieldExists = await _fieldRepository.ExistsAsync(ownerId, fieldId, cancellationToken);
-        if (!fieldExists)
-            throw new DomainException($"Talhão com ID {fieldId} não foi encontrado.");
+        var field = await _fieldRepository.GetByIdAsync(ownerId, fieldId, cancellationToken);
+        if (field == null)
+            throw new NotFoundException($"Talhão com ID {fieldId} não foi encontrado.");
+
+        await EnsureFarmAllowsFieldMutationsAsync(ownerId, field.FarmId, cancellationToken);
 
         await _fieldRepository.DeleteAsync(ownerId, fieldId, cancellationToken);
+    }
+
+    private async Task EnsureFarmAllowsFieldMutationsAsync(
+        Guid ownerId,
+        Guid farmId,
+        CancellationToken cancellationToken)
+    {
+        var farm = await _farmRepository.GetByIdAsync(ownerId, farmId, cancellationToken);
+        if (farm == null)
+            throw new NotFoundException($"Fazenda com ID {farmId} não foi encontrada.");
+
+        if (!farm.IsActive)
+            throw new ConflictException("A fazenda está inativa e não permite alterações em talhões.");
     }
 
     private static IReadOnlyCollection<FieldBoundaryCoordinate> MapBoundaryCoordinates(

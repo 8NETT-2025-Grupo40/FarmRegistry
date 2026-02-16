@@ -32,6 +32,8 @@ public class FieldsController : BaseController
     [HttpPost]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateField([FromBody] CreateFieldRequest request)
     {
         try
@@ -40,12 +42,32 @@ public class FieldsController : BaseController
             LogUserInfo("CreateField", _userContext);
             return CreatedAtAction(nameof(GetFieldById), new { id = response.Id }, response);
         }
+        catch (NotFoundException ex)
+        {
+            LogUserInfo("CreateFieldNotFound", _userContext);
+            return NotFound(new ProblemDetails
+            {
+                Title = "Recurso não encontrado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (ConflictException ex)
+        {
+            LogUserInfo("CreateFieldConflict", _userContext);
+            return Conflict(new ProblemDetails
+            {
+                Title = "Conflito de estado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
         catch (DomainException ex)
         {
             LogUserInfo("CreateFieldBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domínio",
+                Title = "Regra de negócio inválida.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -60,6 +82,7 @@ public class FieldsController : BaseController
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<FieldResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetFields([FromQuery] Guid? farmId = null)
     {
         if (!farmId.HasValue)
@@ -67,7 +90,7 @@ public class FieldsController : BaseController
             LogUserInfo("GetFieldsBadRequestRequiredParam", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Parâmetro obrigatório",
+                Title = "Dados de entrada inválidos.",
                 Detail = "O parâmetro 'farmId' é obrigatório.",
                 Status = StatusCodes.Status400BadRequest
             });
@@ -79,12 +102,22 @@ public class FieldsController : BaseController
             LogUserInfo("GetFields", _userContext);
             return Ok(response);
         }
+        catch (NotFoundException ex)
+        {
+            LogUserInfo("GetFieldsNotFound", _userContext);
+            return NotFound(new ProblemDetails
+            {
+                Title = "Recurso não encontrado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
         catch (DomainException ex)
         {
             LogUserInfo("GetFieldsBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domínio",
+                Title = "Regra de negócio inválida.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -107,7 +140,7 @@ public class FieldsController : BaseController
             LogUserInfo("GetFieldByIdNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talhão não encontrado",
+                Title = "Recurso não encontrado.",
                 Detail = $"Talhão com ID {id} não foi encontrado.",
                 Status = StatusCodes.Status404NotFound
             });
@@ -125,15 +158,16 @@ public class FieldsController : BaseController
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateField(Guid id, [FromBody] UpdateFieldRequest request)
     {
         if (id != request.Id)
         {
-            LogUserInfo("UpdateFieldIncosistenceId", _userContext);
+            LogUserInfo("UpdateFieldIdMismatch", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "ID inconsistente",
+                Title = "Dados de entrada inválidos.",
                 Detail = "O ID da URL não confere com o ID do corpo da requisição.",
                 Status = StatusCodes.Status400BadRequest
             });
@@ -145,12 +179,32 @@ public class FieldsController : BaseController
             LogUserInfo("UpdateField", _userContext);
             return Ok(response);
         }
+        catch (NotFoundException ex)
+        {
+            LogUserInfo("UpdateFieldNotFound", _userContext);
+            return NotFound(new ProblemDetails
+            {
+                Title = "Recurso não encontrado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (ConflictException ex)
+        {
+            LogUserInfo("UpdateFieldConflict", _userContext);
+            return Conflict(new ProblemDetails
+            {
+                Title = "Conflito de estado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
         catch (DomainException ex)
         {
             LogUserInfo("UpdateFieldBadRequest", _userContext);
             return BadRequest(new ProblemDetails
             {
-                Title = "Erro de domínio",
+                Title = "Regra de negócio inválida.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status400BadRequest
             });
@@ -164,6 +218,8 @@ public class FieldsController : BaseController
     /// <returns>Talhão ativado</returns>
     [HttpPatch("{id:guid}/activate")]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ActivateField(Guid id)
     {
@@ -173,14 +229,34 @@ public class FieldsController : BaseController
             LogUserInfo("ActivateField", _userContext);
             return Ok(response);
         }
-        catch (DomainException ex)
+        catch (NotFoundException ex)
         {
             LogUserInfo("ActivateFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talhão não encontrado",
+                Title = "Recurso não encontrado.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (ConflictException ex)
+        {
+            LogUserInfo("ActivateFieldConflict", _userContext);
+            return Conflict(new ProblemDetails
+            {
+                Title = "Conflito de estado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+        catch (DomainException ex)
+        {
+            LogUserInfo("ActivateFieldBadRequest", _userContext);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Regra de negócio inválida.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
             });
         }
     }
@@ -192,6 +268,8 @@ public class FieldsController : BaseController
     /// <returns>Talhão desativado</returns>
     [HttpPatch("{id:guid}/deactivate")]
     [ProducesResponseType(typeof(FieldResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeactivateField(Guid id)
     {
@@ -201,25 +279,47 @@ public class FieldsController : BaseController
             LogUserInfo("DeactivateField", _userContext);
             return Ok(response);
         }
-        catch (DomainException ex)
+        catch (NotFoundException ex)
         {
             LogUserInfo("DeactivateFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talhão não encontrado",
+                Title = "Recurso não encontrado.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (ConflictException ex)
+        {
+            LogUserInfo("DeactivateFieldConflict", _userContext);
+            return Conflict(new ProblemDetails
+            {
+                Title = "Conflito de estado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+        catch (DomainException ex)
+        {
+            LogUserInfo("DeactivateFieldBadRequest", _userContext);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Regra de negócio inválida.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
             });
         }
     }
 
     /// <summary>
-    /// Remove um talhão (deleção lógica)
+    /// Remove um talhão (deleção física)
     /// </summary>
     /// <param name="id">ID do talhão</param>
     /// <returns>No content</returns>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteField(Guid id)
     {
@@ -229,14 +329,34 @@ public class FieldsController : BaseController
             LogUserInfo("DeleteField", _userContext);
             return NoContent();
         }
-        catch (DomainException ex)
+        catch (NotFoundException ex)
         {
             LogUserInfo("DeleteFieldNotFound", _userContext);
             return NotFound(new ProblemDetails
             {
-                Title = "Talhão não encontrado",
+                Title = "Recurso não encontrado.",
                 Detail = ex.Message,
                 Status = StatusCodes.Status404NotFound
+            });
+        }
+        catch (ConflictException ex)
+        {
+            LogUserInfo("DeleteFieldConflict", _userContext);
+            return Conflict(new ProblemDetails
+            {
+                Title = "Conflito de estado.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+        catch (DomainException ex)
+        {
+            LogUserInfo("DeleteFieldBadRequest", _userContext);
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Regra de negócio inválida.",
+                Detail = ex.Message,
+                Status = StatusCodes.Status400BadRequest
             });
         }
     }

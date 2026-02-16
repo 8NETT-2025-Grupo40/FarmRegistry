@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FarmRegistry.Api.Middleware;
 
@@ -19,15 +21,21 @@ public sealed class MockAuthenticationMiddleware
             var userIdString = userIdValue.FirstOrDefault();
             if (string.IsNullOrWhiteSpace(userIdString))
             {
-                context.Response.StatusCode = 400;
-                await context.Response.WriteAsync("X-Mock-User-Id header cannot be empty when provided");
+                await WriteBadRequestAsync(
+                    context,
+                    "Dados de entrada inválidos.",
+                    "O header X-Mock-User-Id não pode ser vazio quando informado.");
+
                 return;
             }
 
             if (!Guid.TryParse(userIdString, out var userId))
             {
-                context.Response.StatusCode = 400;
-                await context.Response.WriteAsync("X-Mock-User-Id header must be a valid GUID");
+                await WriteBadRequestAsync(
+                    context,
+                    "Dados de entrada inválidos.",
+                    "O header X-Mock-User-Id deve ser um GUID válido.");
+
                 return;
             }
 
@@ -58,5 +66,19 @@ public sealed class MockAuthenticationMiddleware
         }
 
         await _next(context);
+    }
+
+    private static async Task WriteBadRequestAsync(HttpContext context, string title, string detail)
+    {
+        var problemDetails = new ProblemDetails
+        {
+            Title = title,
+            Detail = detail,
+            Status = StatusCodes.Status400BadRequest
+        };
+
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        context.Response.ContentType = "application/problem+json";
+        await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
     }
 }
