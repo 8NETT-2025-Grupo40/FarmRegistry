@@ -79,7 +79,7 @@ public sealed class FarmServiceTests
     }
 
     [Fact]
-    public async Task UpdateFarmAsync_WithNonExistentFarm_ShouldThrowDomainException()
+    public async Task UpdateFarmAsync_WithNonExistentFarm_ShouldThrowNotFoundException()
     {
         // Arrange
         var ownerId = Guid.NewGuid();
@@ -90,7 +90,7 @@ public sealed class FarmServiceTests
             .Returns((Farm?)null);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<DomainException>(
+        var ex = await Assert.ThrowsAsync<NotFoundException>(
             () => _farmService.UpdateFarmAsync(ownerId, request));
         
         Assert.Contains("Fazenda com ID", ex.Message);

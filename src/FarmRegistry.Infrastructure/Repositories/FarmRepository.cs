@@ -46,7 +46,11 @@ public sealed class FarmRepository : IFarmRepository
 
     public async Task DeleteAsync(Guid ownerId, Guid farmId, CancellationToken cancellationToken = default)
     {
-        var farm = await GetByIdAsync(ownerId, farmId, cancellationToken);
+        var farm = await _context.Farms
+            .Include(f => f.Fields)
+            .ThenInclude(field => field.BoundaryPoints)
+            .FirstOrDefaultAsync(f => f.FarmId == farmId && f.OwnerId == ownerId, cancellationToken);
+
         if (farm != null)
         {
             _context.Farms.Remove(farm);

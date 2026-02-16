@@ -12,9 +12,12 @@ public sealed class FarmRegistryProfile : Profile
         CreateMap<Farm, FarmResponse>()
             .ForMember(d => d.Id, opt => opt.MapFrom(s => s.FarmId));
 
+        CreateMap<FieldBoundaryPoint, FieldBoundaryPointResponse>();
+
         CreateMap<Field, FieldResponse>()
             .ForMember(d => d.Id, opt => opt.MapFrom(s => s.FieldId))
             .ForMember(d => d.AreaHectares, opt => opt.MapFrom(s => (decimal)s.AreaHectares))
+            .ForMember(d => d.BoundaryPoints, opt => opt.MapFrom(s => s.BoundaryPoints.OrderBy(point => point.Sequence)))
             .ForMember(d => d.StatusUpdatedAt, opt => opt.MapFrom(s => (DateTime?)s.StatusUpdatedAt));
     }
 }

@@ -15,6 +15,34 @@ public sealed class FieldServiceTests
     private readonly IMapper _mapper;
     private readonly FieldService _fieldService;
 
+    private static IReadOnlyCollection<FieldBoundaryPointRequest> BoundaryRequest =>
+    [
+        new FieldBoundaryPointRequest(-21.2211, -47.8301),
+        new FieldBoundaryPointRequest(-21.2208, -47.8296),
+        new FieldBoundaryPointRequest(-21.2215, -47.8291)
+    ];
+
+    private static IReadOnlyCollection<FieldBoundaryPointRequest> UpdatedBoundaryRequest =>
+    [
+        new FieldBoundaryPointRequest(-21.2231, -47.8311),
+        new FieldBoundaryPointRequest(-21.2227, -47.8305),
+        new FieldBoundaryPointRequest(-21.2234, -47.8302)
+    ];
+
+    private static IReadOnlyCollection<FieldBoundaryCoordinate> BoundaryCoordinates =>
+    [
+        new FieldBoundaryCoordinate(-21.2211, -47.8301),
+        new FieldBoundaryCoordinate(-21.2208, -47.8296),
+        new FieldBoundaryCoordinate(-21.2215, -47.8291)
+    ];
+
+    private static IReadOnlyCollection<FieldBoundaryPointResponse> BoundaryResponse =>
+    [
+        new FieldBoundaryPointResponse(1, -21.2211, -47.8301),
+        new FieldBoundaryPointResponse(2, -21.2208, -47.8296),
+        new FieldBoundaryPointResponse(3, -21.2215, -47.8291)
+    ];
+
     public FieldServiceTests()
     {
         _fieldRepository = Substitute.For<IFieldRepository>();
@@ -30,12 +58,13 @@ public sealed class FieldServiceTests
         // Arrange
         var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
-        var request = new CreateFieldRequest(farmId, "T01", "Talhão 01", 10.5m, FieldStatus.Normal);
-        var field = new Field(farmId, "T01", "Talhão 01", 10.5);
-        var response = new FieldResponse(field.FieldId, farmId, "T01", "Talhão 01", 10.5m, FieldStatus.Normal, field.StatusUpdatedAt, field.CreatedAt);
+        var request = new CreateFieldRequest(farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryRequest, FieldStatus.Normal);
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        var field = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
+        var response = new FieldResponse(field.FieldId, farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryResponse, FieldStatus.Normal, field.StatusUpdatedAt, field.CreatedAt);
 
-        _farmRepository.ExistsAsync(ownerId, farmId, default)
-            .Returns(true);
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
         
         _fieldRepository.CodeExistsInFarmAsync(ownerId, farmId, "T01", null, default)
             .Returns(false);
@@ -54,24 +83,46 @@ public sealed class FieldServiceTests
         Assert.Equal("T01", result.Code);
         Assert.Equal("Talhão 01", result.Name);
         Assert.Equal(10.5m, result.AreaHectares);
+        Assert.Equal("Milho", result.CropName);
+        Assert.Equal(3, result.BoundaryPoints.Count);
     }
 
     [Fact]
-    public async Task CreateFieldAsync_WithNonExistentFarm_ShouldThrowDomainException()
+    public async Task CreateFieldAsync_WithNonExistentFarm_ShouldThrowNotFoundException()
     {
         // Arrange
         var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
-        var request = new CreateFieldRequest(farmId, "T01", "Talhão 01", 10.5m, FieldStatus.Normal);
+        var request = new CreateFieldRequest(farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryRequest, FieldStatus.Normal);
 
-        _farmRepository.ExistsAsync(ownerId, farmId, default)
-            .Returns(false);
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns((Farm?)null);
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<DomainException>(
+        var ex = await Assert.ThrowsAsync<NotFoundException>(
             () => _fieldService.CreateFieldAsync(ownerId, request));
         
         Assert.Contains("Fazenda com ID", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateFieldAsync_WithInactiveFarm_ShouldThrowConflictException()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var farmId = Guid.NewGuid();
+        var request = new CreateFieldRequest(farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryRequest, FieldStatus.Normal);
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        farm.Deactivate();
+
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ConflictException>(
+            () => _fieldService.CreateFieldAsync(ownerId, request));
+
+        Assert.Contains("inativa", ex.Message);
     }
 
     [Fact]
@@ -80,10 +131,11 @@ public sealed class FieldServiceTests
         // Arrange
         var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
-        var request = new CreateFieldRequest(farmId, "T01", "Talhão 01", 10.5m, FieldStatus.Normal);
+        var request = new CreateFieldRequest(farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryRequest, FieldStatus.Normal);
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
 
-        _farmRepository.ExistsAsync(ownerId, farmId, default)
-            .Returns(true);
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
         
         _fieldRepository.CodeExistsInFarmAsync(ownerId, farmId, "T01", null, default)
             .Returns(true);
@@ -102,16 +154,17 @@ public sealed class FieldServiceTests
         var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
         var fieldId = Guid.NewGuid();
-        var request = new UpdateFieldRequest(fieldId, farmId, "T02", "Talhão 02", 12.5m, FieldStatus.AlertaSeca);
-        var existingField = new Field(farmId, "T01", "Talhão 01", 10.5);
-        var response = new FieldResponse(fieldId, farmId, "T02", "Talhão 02", 12.5m, FieldStatus.AlertaSeca, DateTime.UtcNow, existingField.CreatedAt);
+        var request = new UpdateFieldRequest(fieldId, farmId, "T02", "Talhão 02", 12.5m, "Soja", UpdatedBoundaryRequest, FieldStatus.AlertaSeca);
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        var existingField = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
+        var response = new FieldResponse(fieldId, farmId, "T02", "Talhão 02", 12.5m, "Soja", BoundaryResponse, FieldStatus.AlertaSeca, DateTime.UtcNow, existingField.CreatedAt);
 
         _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
             .Returns(existingField);
-        
-        _farmRepository.ExistsAsync(ownerId, farmId, default)
-            .Returns(true);
-        
+
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
+
         _fieldRepository.CodeExistsInFarmAsync(ownerId, farmId, "T02", fieldId, default)
             .Returns(false);
         
@@ -128,6 +181,28 @@ public sealed class FieldServiceTests
         Assert.NotNull(result);
         Assert.Equal("T02", result.Code);
         Assert.Equal("Talhão 02", result.Name);
+        Assert.Equal("Soja", result.CropName);
+    }
+
+    [Fact]
+    public async Task UpdateFieldAsync_WithDifferentFarmId_ShouldThrowDomainException()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var currentFarmId = Guid.NewGuid();
+        var anotherFarmId = Guid.NewGuid();
+        var fieldId = Guid.NewGuid();
+        var request = new UpdateFieldRequest(fieldId, anotherFarmId, "T02", "Talhão 02", 12.5m, "Soja", UpdatedBoundaryRequest, FieldStatus.Normal);
+        var existingField = new Field(currentFarmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
+
+        _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
+            .Returns(existingField);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<DomainException>(
+            () => _fieldService.UpdateFieldAsync(ownerId, request));
+
+        Assert.Contains("Não é permitido alterar a propriedade", ex.Message);
     }
 
     [Fact]
@@ -138,10 +213,20 @@ public sealed class FieldServiceTests
         var farmId = Guid.NewGuid();
         var fields = new[]
         {
-            new Field(farmId, "T01", "Talhão 01", 10.5),
-            new Field(farmId, "T02", "Talhão 02", 8.0)
+            new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates),
+            new Field(farmId, "T02", "Talhão 02", 8.0, "Soja", BoundaryCoordinates)
         };
-        var responses = fields.Select(f => new FieldResponse(f.FieldId, f.FarmId, f.Code, f.Name, (decimal)f.AreaHectares, f.Status, f.StatusUpdatedAt, f.CreatedAt));
+        var responses = fields.Select(f => new FieldResponse(
+            f.FieldId,
+            f.FarmId,
+            f.Code,
+            f.Name,
+            (decimal)f.AreaHectares,
+            f.CropName,
+            BoundaryResponse,
+            f.Status,
+            f.StatusUpdatedAt,
+            f.CreatedAt));
 
         _farmRepository.ExistsAsync(ownerId, farmId, default)
             .Returns(true);
@@ -167,11 +252,15 @@ public sealed class FieldServiceTests
         var ownerId = Guid.NewGuid();
         var fieldId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
-        var field = new Field(farmId, "T01", "Talhão 01", 10.5);
-        var response = new FieldResponse(fieldId, farmId, "T01", "Talhão 01", 10.5m, FieldStatus.Normal, field.StatusUpdatedAt, field.CreatedAt);
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        var field = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
+        var response = new FieldResponse(fieldId, farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryResponse, FieldStatus.Normal, field.StatusUpdatedAt, field.CreatedAt);
 
         _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
             .Returns(field);
+
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
         
         _mapper.Map<FieldResponse>(field)
             .Returns(response);
@@ -182,6 +271,7 @@ public sealed class FieldServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal("T01", result.Code);
+        Assert.Equal("Milho", result.CropName);
     }
 
     [Fact]
@@ -191,13 +281,17 @@ public sealed class FieldServiceTests
         var ownerId = Guid.NewGuid();
         var fieldId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
-        var field = new Field(farmId, "T01", "Talhão 01", 10.5);
-        var response = new FieldResponse(fieldId, farmId, "T01", "Talhão 01", 10.5m, FieldStatus.Normal, field.StatusUpdatedAt, field.CreatedAt);
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        var field = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
+        var response = new FieldResponse(fieldId, farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryResponse, FieldStatus.Normal, field.StatusUpdatedAt, field.CreatedAt);
         
         field.Deactivate(); // Primeiro desativa
 
         _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
             .Returns(field);
+
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
         
         _fieldRepository.UpdateAsync(field, default)
             .Returns(field);
@@ -221,11 +315,15 @@ public sealed class FieldServiceTests
         var ownerId = Guid.NewGuid();
         var fieldId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
-        var field = new Field(farmId, "T01", "Talhão 01", 10.5);
-        var response = new FieldResponse(fieldId, farmId, "T01", "Talhão 01", 10.5m, FieldStatus.Inativo, field.StatusUpdatedAt, field.CreatedAt);
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        var field = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
+        var response = new FieldResponse(fieldId, farmId, "T01", "Talhão 01", 10.5m, "Milho", BoundaryResponse, FieldStatus.Inativo, field.StatusUpdatedAt, field.CreatedAt);
 
         _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
             .Returns(field);
+
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
         
         _fieldRepository.UpdateAsync(field, default)
             .Returns(field);
@@ -248,14 +346,44 @@ public sealed class FieldServiceTests
         // Arrange
         var ownerId = Guid.NewGuid();
         var fieldId = Guid.NewGuid();
+        var farmId = Guid.NewGuid();
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        var field = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
 
-        _fieldRepository.ExistsAsync(ownerId, fieldId, default)
-            .Returns(true);
+        _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
+            .Returns(field);
+
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
 
         // Act
         await _fieldService.DeleteFieldAsync(ownerId, fieldId);
 
         // Assert
         await _fieldRepository.Received(1).DeleteAsync(ownerId, fieldId, default);
+    }
+
+    [Fact]
+    public async Task DeleteFieldAsync_WithInactiveFarm_ShouldThrowConflictException()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var fieldId = Guid.NewGuid();
+        var farmId = Guid.NewGuid();
+        var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
+        farm.Deactivate();
+        var field = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
+
+        _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
+            .Returns(field);
+
+        _farmRepository.GetByIdAsync(ownerId, farmId, default)
+            .Returns(farm);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ConflictException>(
+            () => _fieldService.DeleteFieldAsync(ownerId, fieldId));
+
+        Assert.Contains("inativa", ex.Message);
     }
 }

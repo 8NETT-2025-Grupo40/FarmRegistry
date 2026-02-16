@@ -7,6 +7,12 @@ namespace FarmRegistry.Infrastructure.Tests.Persistence;
 public class FarmRegistryDbContextTests
 {
     private static readonly Guid OwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly IReadOnlyCollection<FieldBoundaryCoordinate> Boundary =
+    [
+        new FieldBoundaryCoordinate(-21.2301, -47.8401),
+        new FieldBoundaryCoordinate(-21.2297, -47.8397),
+        new FieldBoundaryCoordinate(-21.2304, -47.8392)
+    ];
 
     private static DbContextOptions<FarmRegistryDbContext> GetInMemoryDbOptions()
     {
@@ -24,6 +30,7 @@ public class FarmRegistryDbContextTests
 
         Assert.NotNull(context.Farms);
         Assert.NotNull(context.Fields);
+        Assert.NotNull(context.FieldBoundaryPoints);
     }
 
     [Fact]
@@ -64,7 +71,7 @@ public class FarmRegistryDbContextTests
         context.Database.EnsureCreated();
 
         var farm = new Farm(OwnerId, "Fazenda Teste", "Ribeirão Preto", "SP");
-        var field = farm.AddField("T01", "Talhão 01", 10.5);
+        var field = farm.AddField("T01", "Talhão 01", 10.5, "Milho", Boundary);
         
         context.Farms.Add(farm);
         
@@ -79,6 +86,8 @@ public class FarmRegistryDbContextTests
         Assert.Equal("T01", savedField.Code);
         Assert.Equal("Talhão 01", savedField.Name);
         Assert.Equal(10.5, savedField.AreaHectares);
+        Assert.Equal("Milho", savedField.CropName);
+        Assert.Equal(3, context.FieldBoundaryPoints.Count());
     }
 
     [Fact]
@@ -114,8 +123,8 @@ public class FarmRegistryDbContextTests
 
         // Arrange: Criar farm com múltiplos fields
         var farm = new Farm(OwnerId, "Fazenda com Talhões", "Ribeirão Preto", "SP");
-        farm.AddField("T01", "Talhão 01", 10.5);
-        farm.AddField("T02", "Talhão 02", 15.7);
+        farm.AddField("T01", "Talhão 01", 10.5, "Milho", Boundary);
+        farm.AddField("T02", "Talhão 02", 15.7, "Soja", Boundary);
         
         context.Farms.Add(farm);
         context.SaveChanges();
@@ -143,12 +152,12 @@ public class FarmRegistryDbContextTests
 
         // Criar duas fazendas com fields
         var farm1 = new Farm(OwnerId, "Fazenda A", "Ribeirão Preto", "SP");
-        farm1.AddField("T01", "Talhão A1", 10.0);
-        farm1.AddField("T02", "Talhão A2", 15.0);
+        farm1.AddField("T01", "Talhão A1", 10.0, "Milho", Boundary);
+        farm1.AddField("T02", "Talhão A2", 15.0, "Soja", Boundary);
 
         var farm2 = new Farm(Guid.NewGuid(), "Fazenda B", "Campinas", "SP");
-        farm2.AddField("T01", "Talhão B1", 20.0); // Mesmo código, mas farm diferente
-        farm2.AddField("T03", "Talhão B3", 25.0);
+        farm2.AddField("T01", "Talhão B1", 20.0, "Algodão", Boundary); // Mesmo código, mas farm diferente
+        farm2.AddField("T03", "Talhão B3", 25.0, "Café", Boundary);
 
         context.Farms.AddRange(farm1, farm2);
         context.SaveChanges();
@@ -175,7 +184,7 @@ public class FarmRegistryDbContextTests
         context.Database.EnsureCreated();
 
         var farm = new Farm(OwnerId, "Fazenda Teste", "Ribeirão Preto", "SP");
-        var field = farm.AddField("T01", "Talhão 01", 10.5);
+        var field = farm.AddField("T01", "Talhão 01", 10.5, "Milho", Boundary);
         
         context.Farms.Add(farm);
         context.SaveChanges();

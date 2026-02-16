@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +12,9 @@ namespace FarmRegistry.Api.Tests;
 
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly InMemoryDatabaseRoot _databaseRoot = new();
+    private readonly string _databaseName = $"FarmRegistryTestDb_{Guid.NewGuid():N}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Test");
@@ -20,7 +24,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             Dictionary<string, string?> settings = new()
             {
                 ["Authentication:AuthMode"] = "MOCK",
-                ["ConnectionStrings:DefaultConnection"] = "Server=(localdb)\\mssqllocaldb;Database=FarmRegistry_Test;Trusted_Connection=True;TrustServerCertificate=True;"
+                ["ConnectionStrings:DefaultConnection"] = string.Empty
             };
 
             config.AddInMemoryCollection(settings);
@@ -39,9 +43,18 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddDbContext<FarmRegistryDbContext>(options =>
             {
-                options.UseInMemoryDatabase($"FarmRegistryTestDb_{Guid.NewGuid():N}");
+                options.UseInMemoryDatabase(_databaseName, _databaseRoot);
             });
         });
+    }
+
+    public void ResetDatabase()
+    {
+        using var scope = Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<FarmRegistryDbContext>();
+
+        dbContext.Database.EnsureDeleted();
+        dbContext.Database.EnsureCreated();
     }
 
     public HttpClient CreateCognitoAuthenticatedClient(Guid? ownerId = null)

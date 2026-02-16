@@ -8,5 +8,7 @@ public sealed record UpdateFieldRequest(
     string Code,
     string Name,
     decimal AreaHectares,
+    string CropName,
+    IReadOnlyCollection<FieldBoundaryPointRequest> BoundaryPoints,
     FieldStatus Status
 );

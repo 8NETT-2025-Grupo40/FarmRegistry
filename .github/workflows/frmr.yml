@@ -57,7 +57,7 @@ jobs:
             ./
 
   tests:
-    name: Run unit tests
+    name: Run tests
     needs: build
     runs-on: ubuntu-latest
 
@@ -98,6 +98,7 @@ jobs:
   build-push:
     name: Build and Push Docker Image
     needs: [build, tests]
+    environment: production
     runs-on: ubuntu-latest
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}

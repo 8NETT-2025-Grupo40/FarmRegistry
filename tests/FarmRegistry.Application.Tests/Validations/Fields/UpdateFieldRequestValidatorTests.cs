@@ -10,6 +10,13 @@ public sealed class UpdateFieldRequestValidatorTests
 {
     private readonly UpdateFieldRequestValidator _validator = new();
 
+    private static readonly IReadOnlyCollection<FieldBoundaryPointRequest> ValidBoundary =
+    [
+        new FieldBoundaryPointRequest(-21.201, -47.801),
+        new FieldBoundaryPointRequest(-21.202, -47.802),
+        new FieldBoundaryPointRequest(-21.203, -47.803)
+    ];
+
     [Fact]
     public void Should_pass_when_valid()
     {
@@ -19,6 +26,8 @@ public sealed class UpdateFieldRequestValidatorTests
             "TALHAO-02",
             "Talhão 02",
             8m,
+            "Soja",
+            ValidBoundary,
             FieldStatus.AlertaSeca
         );
 
@@ -34,6 +43,8 @@ public sealed class UpdateFieldRequestValidatorTests
             "TALHAO-02",
             "Talhão 02",
             8m,
+            "Soja",
+            ValidBoundary,
             FieldStatus.Normal
         );
 
@@ -49,9 +60,28 @@ public sealed class UpdateFieldRequestValidatorTests
             "TALHAO-02",
             "Talhão 02",
             8m,
+            "Soja",
+            ValidBoundary,
             (FieldStatus)0
         );
 
         _validator.TestValidate(model).ShouldHaveValidationErrorFor(x => x.Status);
+    }
+
+    [Fact]
+    public void Should_fail_when_crop_is_empty()
+    {
+        var model = new UpdateFieldRequest(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "TALHAO-02",
+            "Talhão 02",
+            8m,
+            string.Empty,
+            ValidBoundary,
+            FieldStatus.Normal
+        );
+
+        _validator.TestValidate(model).ShouldHaveValidationErrorFor(x => x.CropName);
     }
 }

@@ -7,5 +7,7 @@ public sealed record CreateFieldRequest(
     string Code,
     string Name,
     decimal AreaHectares,
+    string CropName,
+    IReadOnlyCollection<FieldBoundaryPointRequest> BoundaryPoints,
     FieldStatus Status
 );

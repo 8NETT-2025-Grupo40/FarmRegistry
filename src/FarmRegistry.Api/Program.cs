@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using FluentValidation.AspNetCore;
 using FarmRegistry.Api.Extensions;
 using FarmRegistry.Api.HealthChecks;
 using FarmRegistry.Api.Middleware;
@@ -6,6 +7,7 @@ using FarmRegistry.Application.Configuration;
 using FarmRegistry.Application.Extensions;
 using FarmRegistry.Infrastructure.Extensions;
 using FarmRegistry.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -13,7 +15,23 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var problemDetails = new ValidationProblemDetails(context.ModelState)
+            {
+                Title = "Dados de entrada inválidos.",
+                Detail = "Corrija os campos informados e tente novamente.",
+                Status = StatusCodes.Status400BadRequest
+            };
+
+            return new BadRequestObjectResult(problemDetails);
+        };
+    });
+
+builder.Services.AddFluentValidationAutoValidation();
 
 // Add API versioning (NEW .NET 8 way)
 builder.Services.AddApiVersioning(opt =>

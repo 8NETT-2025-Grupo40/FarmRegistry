@@ -46,15 +46,12 @@ public class FarmEntityTypeConfiguration : IEntityTypeConfiguration<Farm>
         builder.Property<string>("UpdatedBy")
             .HasMaxLength(100);
 
-        // **FIX: Configurar relacionamento corretamente usando apenas a propriedade Fields**
         builder.HasMany(f => f.Fields)
             .WithOne()
             .HasForeignKey(field => field.FarmId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // **FIX: Configurar navegação para usar o backing field correto**
         builder.Navigation(f => f.Fields)
-            .HasField("_fields")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Índices para performance
