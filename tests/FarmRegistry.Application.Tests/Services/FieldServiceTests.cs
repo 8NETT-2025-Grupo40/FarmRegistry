@@ -154,10 +154,10 @@ public sealed class FieldServiceTests
         var ownerId = Guid.NewGuid();
         var farmId = Guid.NewGuid();
         var fieldId = Guid.NewGuid();
-        var request = new UpdateFieldRequest(fieldId, farmId, "T02", "Talhão 02", 12.5m, "Soja", UpdatedBoundaryRequest, FieldStatus.AlertaSeca);
+        var request = new UpdateFieldRequest(fieldId, farmId, "T02", "Talhão 02", 12.5m, "Soja", UpdatedBoundaryRequest, FieldStatus.Inativo);
         var farm = new Farm(ownerId, "Fazenda A", "Campinas", "SP");
         var existingField = new Field(farmId, "T01", "Talhão 01", 10.5, "Milho", BoundaryCoordinates);
-        var response = new FieldResponse(fieldId, farmId, "T02", "Talhão 02", 12.5m, "Soja", BoundaryResponse, FieldStatus.AlertaSeca, DateTime.UtcNow, existingField.CreatedAt);
+        var response = new FieldResponse(fieldId, farmId, "T02", "Talhão 02", 12.5m, "Soja", BoundaryResponse, FieldStatus.Inativo, DateTime.UtcNow, existingField.CreatedAt);
 
         _fieldRepository.GetByIdAsync(ownerId, fieldId, default)
             .Returns(existingField);

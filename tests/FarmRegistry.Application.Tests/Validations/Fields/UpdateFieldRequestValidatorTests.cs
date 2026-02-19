@@ -28,7 +28,7 @@ public sealed class UpdateFieldRequestValidatorTests
             8m,
             "Soja",
             ValidBoundary,
-            FieldStatus.AlertaSeca
+            FieldStatus.Inativo
         );
 
         _validator.TestValidate(model).ShouldNotHaveAnyValidationErrors();
@@ -63,6 +63,23 @@ public sealed class UpdateFieldRequestValidatorTests
             "Soja",
             ValidBoundary,
             (FieldStatus)0
+        );
+
+        _validator.TestValidate(model).ShouldHaveValidationErrorFor(x => x.Status);
+    }
+
+    [Fact]
+    public void Should_fail_when_status_not_in_enum()
+    {
+        var model = new UpdateFieldRequest(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "TALHAO-02",
+            "Talhão 02",
+            8m,
+            "Soja",
+            ValidBoundary,
+            (FieldStatus)2
         );
 
         _validator.TestValidate(model).ShouldHaveValidationErrorFor(x => x.Status);

@@ -73,6 +73,38 @@ public class ResourceFlowTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
+    public async Task CreateField_WithStatusNotInEnum_ShouldReturnValidationProblem()
+    {
+        var farmId = await CreateFarmAsync(_client);
+
+        var request = new
+        {
+            farmId,
+            code = "TALHAO-01",
+            name = "Talhao Norte",
+            areaHectares = 10.5m,
+            cropName = "Milho",
+            boundaryPoints = new[]
+            {
+                new { latitude = -21.2211, longitude = -47.8301 },
+                new { latitude = -21.2208, longitude = -47.8296 },
+                new { latitude = -21.2215, longitude = -47.8291 }
+            },
+            status = 2
+        };
+
+        var response = await _client.PostAsJsonAsync("/registry/api/v1/fields", request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var content = await response.Content.ReadAsStringAsync();
+        using var json = JsonDocument.Parse(content);
+
+        json.RootElement.TryGetProperty("errors", out var errors).Should().BeTrue();
+        errors.TryGetProperty("Status", out _).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task CreateField_WithNonExistentFarm_ShouldReturnNotFound()
     {
         var request = new
@@ -202,7 +234,7 @@ public class ResourceFlowTests : IClassFixture<IntegrationTestFixture>
                 new { latitude = -21.2208, longitude = -47.8296 },
                 new { latitude = -21.2215, longitude = -47.8291 }
             },
-            status = 2
+            status = 1
         };
 
         var response = await _client.PutAsJsonAsync($"/registry/api/v1/fields/{fieldId}", request);

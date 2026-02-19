@@ -66,6 +66,22 @@ public sealed class CreateFieldRequestValidatorTests
     }
 
     [Fact]
+    public void Should_fail_when_status_not_in_enum()
+    {
+        var model = new CreateFieldRequest(
+            Guid.NewGuid(),
+            "TALHAO-01",
+            "Talhão 01",
+            10m,
+            "Milho",
+            ValidBoundary,
+            (FieldStatus)2
+        );
+
+        _validator.TestValidate(model).ShouldHaveValidationErrorFor(x => x.Status);
+    }
+
+    [Fact]
     public void Should_fail_when_boundary_has_less_than_3_points()
     {
         var model = new CreateFieldRequest(
